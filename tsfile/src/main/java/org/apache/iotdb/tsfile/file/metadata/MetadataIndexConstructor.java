@@ -50,6 +50,7 @@ public class MetadataIndexConstructor {
   public static MetadataIndexNode constructMetadataIndex(
       Map<String, List<TimeseriesMetadata>> deviceTimeseriesMetadataMap, TsFileOutput out)
       throws IOException {
+    config.setMaxDegreeOfIndexNode(3);
     Map<String, MetadataIndexNode> deviceMetadataIndexMap = new TreeMap<>();
 
     // for timeseriesMetadata of each device
