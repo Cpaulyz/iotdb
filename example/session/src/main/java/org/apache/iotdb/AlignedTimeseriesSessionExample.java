@@ -58,13 +58,13 @@ public class AlignedTimeseriesSessionExample {
 //    createAlignedTimeseries();
 //    insertAlignedRecord();
 
-    insertRecord(ROOT_SG1_D2);
-    insertRecord(ROOT_SG1_D1);
-    insertTabletWithAlignedTimeseriesMethod1();
+//    insertRecord(ROOT_SG1_D2);
+//    insertRecord(ROOT_SG1_D1);
+//    insertTabletWithAlignedTimeseriesMethod1();
 //    insertTabletWithAlignedTimeseriesMethod2();
 //    insertNullableTabletWithAlignedTimeseries();
 //
-//    selectTest();
+    selectTest();
 //    selectWithValueFilterTest();
 //    selectWithGroupByTest();
 //    selectWithLastTest();
