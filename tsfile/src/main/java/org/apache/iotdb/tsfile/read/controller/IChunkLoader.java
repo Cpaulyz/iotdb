@@ -22,6 +22,7 @@ import org.apache.iotdb.tsfile.file.metadata.ChunkMetadata;
 import org.apache.iotdb.tsfile.read.common.Chunk;
 
 import java.io.IOException;
+import java.util.List;
 
 public interface IChunkLoader {
 
@@ -30,4 +31,8 @@ public interface IChunkLoader {
 
   /** close the file reader. */
   void close() throws IOException;
+
+  /** support for vector */
+  Chunk loadVectorTimeChunk(
+      ChunkMetadata timeChunkMetadata, List<ChunkMetadata> valueChunkMetadatas) throws IOException;
 }

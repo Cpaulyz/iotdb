@@ -868,6 +868,87 @@ public class TsFileSequenceReader implements AutoCloseable {
   }
 
   /**
+   * read memory chunk once for vector.
+   *
+   * @param timeChunkMetadata time chunk metadata
+   * @param valueChunkMetadatas value chunk metadata
+   * @return -map
+   */
+  public Map<ChunkMetadata, Chunk> readMemVectorChunk(
+      ChunkMetadata timeChunkMetadata, List<ChunkMetadata> valueChunkMetadatas) {
+    Map<ChunkMetadata, Chunk> res = new HashMap<>();
+    try {
+      int chunkHeadSize = ChunkHeader.getSerializedSize(timeChunkMetadata.getMeasurementUid());
+      long endOffset = -1;
+      ChunkMetadata lastChunkMetadata = null;
+      for (ChunkMetadata metadata : valueChunkMetadatas) {
+          if( metadata.getOffsetOfChunkHeader() > endOffset){
+              endOffset = metadata.getOffsetOfChunkHeader();
+              lastChunkMetadata = metadata;
+          }
+      }
+      if (endOffset != -1) {
+          // compute true endOffset
+          int lastChunkHeaderSize = ChunkHeader.getSerializedSize(lastChunkMetadata.getMeasurementUid());
+          ChunkHeader lastHeader = readChunkHeader(lastChunkMetadata.getOffsetOfChunkHeader(), lastChunkHeaderSize);
+          endOffset += lastHeader.getSerializedSize()+lastHeader.getDataSize();
+        ByteBuffer buffer =
+            readData(timeChunkMetadata.getOffsetOfChunkHeader(), endOffset); // read once
+        // load time chunk
+        int headSize = ChunkHeader.getSerializedSize(timeChunkMetadata.getMeasurementUid());
+        ChunkHeader header = ChunkHeader.deserializeFrom(buffer, headSize);
+        byte[] chunkBuffer = new byte[header.getDataSize()];
+        buffer.get(chunkBuffer, 0, header.getDataSize());
+        res.put(
+            timeChunkMetadata,
+            new Chunk(
+                header,
+                ByteBuffer.wrap(chunkBuffer),
+                timeChunkMetadata.getDeleteIntervalList(),
+                timeChunkMetadata.getStatistics()));
+        // load value chunk
+        for (ChunkMetadata metadata : valueChunkMetadatas) {
+          if (metadata.getOffsetOfChunkHeader() < endOffset) {
+            buffer.position(
+                (int) (metadata.getOffsetOfChunkHeader()
+                        - timeChunkMetadata.getOffsetOfChunkHeader()));
+            headSize = ChunkHeader.getSerializedSize(metadata.getMeasurementUid());
+            header = ChunkHeader.deserializeFrom(buffer, headSize);
+            chunkBuffer = new byte[header.getDataSize()];
+            buffer.get(
+                chunkBuffer,0, header.getDataSize());
+            res.put(
+                metadata,
+                new Chunk(
+                    header,
+                    ByteBuffer.wrap(chunkBuffer),
+                    metadata.getDeleteIntervalList(),
+                    metadata.getStatistics()));
+          }
+        }
+      } else {
+        ChunkHeader header =
+            readChunkHeader(timeChunkMetadata.getOffsetOfChunkHeader(), chunkHeadSize);
+        ByteBuffer buffer =
+            readChunk(
+                timeChunkMetadata.getOffsetOfChunkHeader() + header.getSerializedSize(),
+                header.getDataSize());
+        res.put(
+            timeChunkMetadata,
+            new Chunk(
+                header,
+                buffer,
+                timeChunkMetadata.getDeleteIntervalList(),
+                timeChunkMetadata.getStatistics()));
+      }
+
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+    return res;
+  }
+
+  /**
    * not thread safe.
    *
    * @param type given tsfile data type

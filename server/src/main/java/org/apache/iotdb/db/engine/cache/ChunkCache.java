@@ -28,7 +28,6 @@ import org.apache.iotdb.tsfile.read.TsFileSequenceReader;
 import org.apache.iotdb.tsfile.read.common.Chunk;
 import org.apache.iotdb.tsfile.utils.RamUsageEstimator;
 
-import com.github.benmanes.caffeine.cache.CacheLoader;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
 import com.github.benmanes.caffeine.cache.Weigher;
@@ -36,6 +35,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -50,6 +51,7 @@ public class ChunkCache {
   private static final long MEMORY_THRESHOLD_IN_CHUNK_CACHE =
       config.getAllocateMemoryForChunkCache();
   private static final boolean CACHE_ENABLE = config.isMetaDataCacheEnable();
+  private static final boolean CACHE_VECTOR_ENABLE = true;
 
   private final LoadingCache<ChunkMetadata, Chunk> lruCache;
 
@@ -100,18 +102,18 @@ public class ChunkCache {
                 })
             .recordStats()
             .build(
-                    chunkMetadata -> {
-                      try {
-                        logger.debug("Read and cache chunk of {}",chunkMetadata);
-                        TsFileSequenceReader reader =
-                            FileReaderManager.getInstance()
-                                .get(chunkMetadata.getFilePath(), chunkMetadata.isClosed());
-                        return reader.readMemChunk(chunkMetadata);
-                      } catch (IOException e) {
-                        logger.error("Something wrong happened in reading {}", chunkMetadata, e);
-                        throw e;
-                      }
-                    });
+                chunkMetadata -> {
+                  try {
+                    logger.debug("Read and cache chunk of {}", chunkMetadata);
+                    TsFileSequenceReader reader =
+                        FileReaderManager.getInstance()
+                            .get(chunkMetadata.getFilePath(), chunkMetadata.isClosed());
+                    return reader.readMemChunk(chunkMetadata);
+                  } catch (IOException e) {
+                    logger.error("Something wrong happened in reading {}", chunkMetadata, e);
+                    throw e;
+                  }
+                });
   }
 
   public static ChunkCache getInstance() {
@@ -120,6 +122,36 @@ public class ChunkCache {
 
   public Chunk get(ChunkMetadata chunkMetaData) throws IOException {
     return get(chunkMetaData, false);
+  }
+
+  /**
+   * support for vector
+   *
+   * @param timeChunkMetadata timeColumn's chunk metadata
+   * @param valueChunkMetadatas valueColumns' chunk metadata, only about query measurement
+   * @return time chunk
+   */
+  public Chunk getTimeChunk(
+      ChunkMetadata timeChunkMetadata, List<ChunkMetadata> valueChunkMetadatas) throws IOException {
+    if (CACHE_ENABLE && CACHE_VECTOR_ENABLE) {
+      // explicitly put cache
+      TsFileSequenceReader reader =
+          FileReaderManager.getInstance()
+              .get(timeChunkMetadata.getFilePath(), timeChunkMetadata.isClosed());
+      Map<ChunkMetadata, Chunk> map =
+          reader.readMemVectorChunk(timeChunkMetadata, valueChunkMetadatas);
+      lruCache.putAll(map);
+
+      Chunk chunk = lruCache.get(timeChunkMetadata);
+      return new Chunk(
+          chunk.getHeader(),
+          chunk.getData().duplicate(),
+          chunk.getDeleteIntervalList(),
+          timeChunkMetadata.getStatistics());
+
+    } else {
+      return get(timeChunkMetadata, false);
+    }
   }
 
   public Chunk get(ChunkMetadata chunkMetaData, boolean debug) throws IOException {

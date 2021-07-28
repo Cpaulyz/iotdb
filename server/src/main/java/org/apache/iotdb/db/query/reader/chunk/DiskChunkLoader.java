@@ -25,6 +25,7 @@ import org.apache.iotdb.tsfile.read.common.Chunk;
 import org.apache.iotdb.tsfile.read.controller.IChunkLoader;
 
 import java.io.IOException;
+import java.util.List;
 
 /** To read one chunk from disk, and only used in iotdb server module */
 public class DiskChunkLoader implements IChunkLoader {
@@ -43,5 +44,11 @@ public class DiskChunkLoader implements IChunkLoader {
   @Override
   public void close() {
     // do nothing
+  }
+
+  @Override
+  public Chunk loadVectorTimeChunk(
+      ChunkMetadata timeChunkMetadata, List<ChunkMetadata> valueChunkMetadatas) throws IOException {
+    return ChunkCache.getInstance().getTimeChunk(timeChunkMetadata, valueChunkMetadatas);
   }
 }

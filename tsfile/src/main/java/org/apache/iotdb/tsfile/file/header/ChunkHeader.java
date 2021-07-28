@@ -190,6 +190,29 @@ public class ChunkHeader {
         chunkType, measurementID, dataSize, chunkHeaderSize, dataType, type, encoding);
   }
 
+  /**
+   * deserialize from buffer, the marker has not been read.
+   *
+   * @param buffer input buffer
+   * @param chunkHeaderSize the estimated size of chunk's header
+   * @return CHUNK_HEADER object
+   * @throws IOException IOException
+   */
+  public static ChunkHeader deserializeFrom(ByteBuffer buffer, int chunkHeaderSize)
+      throws IOException {
+    byte chunkType = buffer.get();
+    // read measurementID
+    String measurementID = ReadWriteIOUtils.readVarIntString(buffer);
+    int dataSize = ReadWriteForEncodingUtils.readUnsignedVarInt(buffer);
+    TSDataType dataType = ReadWriteIOUtils.readDataType(buffer);
+    CompressionType type = ReadWriteIOUtils.readCompressionType(buffer);
+    TSEncoding encoding = ReadWriteIOUtils.readEncoding(buffer);
+    chunkHeaderSize =
+        chunkHeaderSize - Integer.BYTES - 1 + ReadWriteForEncodingUtils.uVarIntSize(dataSize);
+    return new ChunkHeader(
+        chunkType, measurementID, dataSize, chunkHeaderSize, dataType, type, encoding);
+  }
+
   public int getSerializedSize() {
     return serializedSize;
   }

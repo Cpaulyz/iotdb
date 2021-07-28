@@ -24,6 +24,9 @@ import org.apache.iotdb.tsfile.file.metadata.ChunkMetadata;
 import org.apache.iotdb.tsfile.read.common.Chunk;
 import org.apache.iotdb.tsfile.read.controller.IChunkLoader;
 
+import java.io.IOException;
+import java.util.List;
+
 /** To read one chunk from memory, and only used in iotdb server module */
 public class MemChunkLoader implements IChunkLoader {
 
@@ -41,6 +44,12 @@ public class MemChunkLoader implements IChunkLoader {
   @Override
   public void close() {
     // no resources need to close
+  }
+
+  @Override
+  public Chunk loadVectorTimeChunk(
+      ChunkMetadata timeChunkMetadata, List<ChunkMetadata> valueChunkMetadatas) throws IOException {
+    throw new UnsupportedOperationException();
   }
 
   public ReadOnlyMemChunk getChunk() {

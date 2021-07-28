@@ -24,6 +24,7 @@ import org.apache.iotdb.tsfile.read.TsFileSequenceReader;
 import org.apache.iotdb.tsfile.read.common.Chunk;
 
 import java.io.IOException;
+import java.util.List;
 
 /** Read one Chunk and cache it into a LRUCache, only used in tsfile module. */
 public class CachedChunkLoaderImpl implements IChunkLoader {
@@ -69,5 +70,11 @@ public class CachedChunkLoaderImpl implements IChunkLoader {
   @Override
   public void close() throws IOException {
     reader.close();
+  }
+
+  @Override
+  public Chunk loadVectorTimeChunk(
+      ChunkMetadata timeChunkMetadata, List<ChunkMetadata> valueChunkMetadatas) throws IOException {
+    throw new UnsupportedOperationException();
   }
 }

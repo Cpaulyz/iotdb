@@ -49,10 +49,10 @@ public class HybridTimeseriesSessionExample {
     // set session fetchSize
     session.setFetchSize(10000);
 
-//    insertRecord(ROOT_SG1_D2, 0, 100);
-//    insertTabletWithAlignedTimeseriesMethod(0, 100);
-//    insertRecord(ROOT_SG1_D1, 0, 100);
-//    session.executeNonQueryStatement("flush");
+    //    insertRecord(ROOT_SG1_D2, 0, 100);
+    //    insertTabletWithAlignedTimeseriesMethod(0, 100);
+    //    insertRecord(ROOT_SG1_D1, 0, 100);
+    //    session.executeNonQueryStatement("flush");
     selectTest();
 
     session.close();

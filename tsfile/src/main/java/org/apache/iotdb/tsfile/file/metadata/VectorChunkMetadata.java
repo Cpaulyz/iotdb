@@ -27,6 +27,7 @@ import org.apache.iotdb.tsfile.read.controller.IChunkLoader;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class VectorChunkMetadata implements IChunkMetadata {
@@ -183,7 +184,16 @@ public class VectorChunkMetadata implements IChunkMetadata {
   }
 
   public Chunk getTimeChunk() throws IOException {
-    return timeChunkMetadata.getChunkLoader().loadChunk((ChunkMetadata) timeChunkMetadata);
+    // cache all value chunk
+    return timeChunkMetadata
+        .getChunkLoader()
+        .loadVectorTimeChunk(
+            (ChunkMetadata) timeChunkMetadata,
+            Arrays.asList(
+                valueChunkMetadataList.stream()
+                    .filter(chunk -> chunk instanceof ChunkMetadata)
+                    .map(obj -> (ChunkMetadata) obj)
+                    .toArray(ChunkMetadata[]::new)));
   }
 
   public List<Chunk> getValueChunkList() throws IOException {
