@@ -51,7 +51,7 @@ public class ChunkCache {
   private static final long MEMORY_THRESHOLD_IN_CHUNK_CACHE =
       config.getAllocateMemoryForChunkCache();
   private static final boolean CACHE_ENABLE = config.isMetaDataCacheEnable();
-  private static final boolean CACHE_VECTOR_ENABLE = true;
+  public static boolean CACHE_VECTOR_ENABLE = true;
 
   private final LoadingCache<ChunkMetadata, Chunk> lruCache;
 
@@ -141,7 +141,6 @@ public class ChunkCache {
       Map<ChunkMetadata, Chunk> map =
           reader.readMemVectorChunk(timeChunkMetadata, valueChunkMetadatas);
       lruCache.putAll(map);
-
       Chunk chunk = lruCache.get(timeChunkMetadata);
       return new Chunk(
           chunk.getHeader(),

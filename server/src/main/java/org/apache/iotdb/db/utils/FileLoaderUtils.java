@@ -18,6 +18,7 @@
  */
 package org.apache.iotdb.db.utils;
 
+import org.apache.iotdb.db.engine.cache.ChunkCache;
 import org.apache.iotdb.db.engine.cache.TimeSeriesMetadataCache;
 import org.apache.iotdb.db.engine.modification.Modification;
 import org.apache.iotdb.db.engine.storagegroup.TsFileResource;
@@ -278,10 +279,16 @@ public class FileLoaderUtils {
         chunkReader = new ChunkReader(chunk, timeFilter);
         chunkReader.hasNextSatisfiedPage();
       } else {
+        System.out.println("vector chunk cache status is "+ ChunkCache.CACHE_VECTOR_ENABLE);
+        long startTime =  System.currentTimeMillis();
         VectorChunkMetadata vectorChunkMetadata = (VectorChunkMetadata) chunkMetaData;
+        System.out.println("start reading... "+vectorChunkMetadata.getMeasurementUid());
         Chunk timeChunk = vectorChunkMetadata.getTimeChunk();
         List<Chunk> valueChunkList = vectorChunkMetadata.getValueChunkList();
         chunkReader = new VectorChunkReader(timeChunk, valueChunkList, timeFilter);
+        long endTime =  System.currentTimeMillis();
+        long usedTime = endTime-startTime;
+        System.out.println("end reading, using time: "+usedTime +" ms");
       }
     }
     return chunkReader.loadPageReaderList();
