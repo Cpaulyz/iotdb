@@ -50,11 +50,11 @@ public class IoTDBSessionVectorIT {
 
     //    @Before
     public void setUp() throws Exception {
-//        System.setProperty(IoTDBConstant.IOTDB_CONF, "src/test/resources/");
-//        EnvironmentUtils.closeStatMonitor();
-//        TSFileDescriptor.getInstance().getConfig().setMaxDegreeOfIndexNode(3);
-//        ChunkCache.CACHE_VECTOR_ENABLE = true;
-//        EnvironmentUtils.envSetUp();
+        System.setProperty(IoTDBConstant.IOTDB_CONF, "src/test/resources/");
+        EnvironmentUtils.closeStatMonitor();
+        TSFileDescriptor.getInstance().getConfig().setMaxDegreeOfIndexNode(3);
+        ChunkCache.CACHE_VECTOR_ENABLE = true;
+        EnvironmentUtils.envSetUp();
         session = new Session("127.0.0.1", 6667, "root", "root");
         session.open();
     }
@@ -62,17 +62,17 @@ public class IoTDBSessionVectorIT {
     //    @After
     public void tearDown() throws Exception {
         session.close();
-//        EnvironmentUtils.cleanEnv();
+        EnvironmentUtils.cleanEnv();
     }
 
     @Test
     public void alignedTest() {
         try {
+            setUp();
 //            for (int row = 10; row < 10000; row+=10) {
 //                for (int col = 10; col < 10000; col+=10) {
             int col = 10;
             System.out.println("====================" + col + "======================");
-            setUp();
             insertTabletWithAlignedTimeseriesMethod(10, col);
             session.executeNonQueryStatement("flush");
 //                    ChunkCache.getInstance().clear();
@@ -81,9 +81,10 @@ public class IoTDBSessionVectorIT {
 //                    ChunkCache.getInstance().clear();
 //                    ChunkCache.CACHE_VECTOR_ENABLE = false;
 //                    selectTest("select * from root.sg_1.d1");
-            tearDown();
 //                }
 //            }
+            session.deleteStorageGroup("root.sg_1");
+            tearDown();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -93,10 +94,6 @@ public class IoTDBSessionVectorIT {
     private SessionDataSet selectTest(String sql)
             throws StatementExecutionException, IoTDBConnectionException {
         SessionDataSet dataSet = session.executeQueryStatement(sql);
-//        System.out.println(dataSet.getColumnNames());
-//        while (dataSet.hasNext()) {
-//            System.out.println(dataSet.next());
-//        }
         dataSet.closeOperationHandle();
         return dataSet;
     }
