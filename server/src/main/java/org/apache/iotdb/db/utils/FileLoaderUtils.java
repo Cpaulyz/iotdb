@@ -279,10 +279,10 @@ public class FileLoaderUtils {
         chunkReader = new ChunkReader(chunk, timeFilter);
         chunkReader.hasNextSatisfiedPage();
       } else {
+        VectorChunkMetadata vectorChunkMetadata = (VectorChunkMetadata) chunkMetaData;
+        ChunkCache.getInstance().clear();
         System.out.println("vector chunk cache status is "+ ChunkCache.CACHE_VECTOR_ENABLE);
         long startTime =  System.currentTimeMillis();
-        VectorChunkMetadata vectorChunkMetadata = (VectorChunkMetadata) chunkMetaData;
-        System.out.println("start reading... "+vectorChunkMetadata.getMeasurementUid());
         Chunk timeChunk = vectorChunkMetadata.getTimeChunk();
         List<Chunk> valueChunkList = vectorChunkMetadata.getValueChunkList();
         chunkReader = new VectorChunkReader(timeChunk, valueChunkList, timeFilter);

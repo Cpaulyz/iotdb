@@ -104,7 +104,6 @@ public class ChunkCache {
             .build(
                 chunkMetadata -> {
                   try {
-                    logger.debug("Read and cache chunk of {}", chunkMetadata);
                     TsFileSequenceReader reader =
                         FileReaderManager.getInstance()
                             .get(chunkMetadata.getFilePath(), chunkMetadata.isClosed());
