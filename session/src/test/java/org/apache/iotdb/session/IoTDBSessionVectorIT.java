@@ -31,9 +31,7 @@ import org.apache.iotdb.tsfile.write.record.Tablet;
 import org.apache.iotdb.tsfile.write.schema.IMeasurementSchema;
 import org.apache.iotdb.tsfile.write.schema.VectorMeasurementSchema;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.*;
 
 import java.io.File;
 import java.io.PrintWriter;
@@ -51,6 +49,10 @@ public class IoTDBSessionVectorIT {
 
     private Session session;
 
+    private static int rowNum = 100000;
+    private static int colNum = 500;
+
+
     @Before
     public void setUp() throws Exception {
         System.setProperty(IoTDBConstant.IOTDB_CONF, "src/test/resources/");
@@ -58,38 +60,74 @@ public class IoTDBSessionVectorIT {
         EnvironmentUtils.envSetUp();
         session = new Session("127.0.0.1", 6667, "root", "root");
         session.open();
+        insertTabletWithAlignedTimeseriesMethod(rowNum, colNum);
+        session.executeNonQueryStatement("flush");
     }
 
     @After
     public void tearDown() throws Exception {
+        session.deleteStorageGroup("root.sg_1");
         session.close();
         EnvironmentUtils.cleanEnv();
     }
 
     @Test
-    public void badCacheTest() {
-        int rowNum = 10000;
-        String sql = "select * from root.sg_1.d1.vector.s0";
+    public void hybridCacheTest() {
+        String sql = "select * from root.sg_1.d1.vector.s"+getIndexString(1,colNum);
+        String allSql = "select * from root.sg_1.d1.vector.s"+getIndexString(1,colNum);
+        int time =1;
         try {
-            ArrayList<ArrayList<String>> csvData = new ArrayList<>();
-            ArrayList<String> header = new ArrayList<>();
-            header.add("columnNum");
-            header.add("non-cache");
-            header.add("cache");
-            header.add("diff");
-            csvData.add(header);
+            for (int i = 0; i < time; i++) {
+                ArrayList<ArrayList<String>> allCsvData = new ArrayList<>();
+                ArrayList<ArrayList<String>> badCsvData = new ArrayList<>();
+                ArrayList<String> header = new ArrayList<>();
+                header.add("columnNum");
+                header.add("non-cache");
+                header.add("cache");
+                header.add("diff");
+                allCsvData.add(header);
+                badCsvData.add(header);
 
-            insertTabletWithAlignedTimeseriesMethod(rowNum, 1);
-            session.executeNonQueryStatement("flush");
-            selectTest("select * from root.sg_1.d1");
-            session.deleteStorageGroup("root.sg_1");
+                selectTest(sql);
 
-            csvData.add(testSelectTime(rowNum,1,sql));
-            for (int col = 50; col <= 1000; col += 50) {
-                String tmpSql = sql+",root.sg_1.d1.vector.s"+(col-1);
-               csvData.add(testSelectTime(rowNum,col,tmpSql));
+                allCsvData.add(testSelectTime(1,sql));
+                for (int col = 2; col <= colNum; col ++) {
+                    allSql += ", root.sg_1.d1.vector.s"+getIndexString(col,colNum);
+                    allCsvData.add(testSelectTime(col,allSql));
+                    String badSql = sql+", root.sg_1.d1.vector.s"+getIndexString(col,colNum);
+                    badCsvData.add(testSelectTime(col,badSql));
+                }
+                saveToFile("all_cache_"+i+".csv",allCsvData);
+                saveToFile("bad_cache_"+i+".csv",badCsvData);
             }
-            saveToFile("bad_cache.csv",csvData);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Test
+    public void badCacheTest() {
+        String sql = "select * from root.sg_1.d1.vector.s"+getIndexString(1,colNum);
+        int time =1;
+        try {
+            for (int i = 0; i < time; i++) {
+                ArrayList<ArrayList<String>> csvData = new ArrayList<>();
+                ArrayList<String> header = new ArrayList<>();
+                header.add("columnNum");
+                header.add("non-cache");
+                header.add("cache");
+                header.add("diff");
+                csvData.add(header);
+
+                selectTest(sql);
+
+                csvData.add(testSelectTime(1,sql));
+                for (int col = 2; col <= colNum; col ++) {
+                    String tmpSql = sql+", root.sg_1.d1.vector.s"+getIndexString(col,colNum);
+                    csvData.add(testSelectTime(col,tmpSql));
+                }
+                saveToFile("bad_cache_"+i+".csv",csvData);
+            }
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -97,38 +135,35 @@ public class IoTDBSessionVectorIT {
 
     @Test
     public void allCacheTest() {
-        int rowNum = 10000;
-        String sql = "select * from root.sg_1.d1";
+        String sql = "select * from root.sg_1.d1.vector.s"+getIndexString(1,colNum);
+        int time =10;
         try {
-            ArrayList<ArrayList<String>> csvData = new ArrayList<>();
-            ArrayList<String> header = new ArrayList<>();
-            header.add("columnNum");
-            header.add("non-cache");
-            header.add("cache");
-            header.add("diff");
-            csvData.add(header);
+            for (int i = 0; i < time; i++) {
+                ArrayList<ArrayList<String>> csvData = new ArrayList<>();
+                ArrayList<String> header = new ArrayList<>();
+                header.add("columnNum");
+                header.add("non-cache");
+                header.add("cache");
+                header.add("diff");
+                csvData.add(header);
+                selectTest(sql);
 
-            insertTabletWithAlignedTimeseriesMethod(rowNum, 1);
-            session.executeNonQueryStatement("flush");
-            selectTest("select * from root.sg_1.d1");
-            session.deleteStorageGroup("root.sg_1");
-
-            csvData.add(testSelectTime(rowNum,1,sql));
-            for (int col = 50; col <= 500; col += 50) {
-               csvData.add(testSelectTime(rowNum,col,sql));
+                csvData.add(testSelectTime(1, sql));
+                for (int col = 2; col <= colNum; col ++) {
+                    System.out.println("====================" + col + "======================");
+                    sql += ", root.sg_1.d1.vector.s"+getIndexString(col,colNum);
+                    csvData.add(testSelectTime(col, sql));
+                }
+                saveToFile("all_cache_"+i+".csv", csvData);
             }
-            saveToFile("all_cache.csv",csvData);
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    private ArrayList<String> testSelectTime(int rowNum,int colNum,String sql) throws StatementExecutionException, IoTDBConnectionException {
+    private ArrayList<String> testSelectTime(int colNum,String sql) throws StatementExecutionException, IoTDBConnectionException {
         ArrayList<String> line = new ArrayList<>();
         line.add(colNum+"");
-        System.out.println("====================" + colNum + "======================");
-        insertTabletWithAlignedTimeseriesMethod(rowNum, colNum);
-        session.executeNonQueryStatement("flush");
         ChunkCache.CACHE_VECTOR_ENABLE = false;
         long startTime = System.currentTimeMillis();
         selectTest(sql);
@@ -142,7 +177,6 @@ public class IoTDBSessionVectorIT {
         line.add(String.valueOf((endTime - startTime)));
         System.out.println("cache time: " + (endTime - startTime));
         line.add(String.valueOf(Integer.parseInt(line.get(2))-Integer.parseInt(line.get(1))));
-        session.deleteStorageGroup("root.sg_1");
         return line;
     }
 
@@ -161,6 +195,7 @@ public class IoTDBSessionVectorIT {
     private SessionDataSet selectTest(String sql)
             throws StatementExecutionException, IoTDBConnectionException {
         SessionDataSet dataSet = session.executeQueryStatement(sql);
+        System.out.println(dataSet.getColumnNames());
         dataSet.closeOperationHandle();
         return dataSet;
     }
@@ -176,7 +211,7 @@ public class IoTDBSessionVectorIT {
         String[] measurements = new String[columnNum];
         TSDataType[] dataTypes = new TSDataType[columnNum];
         for (int i = 0; i < columnNum; i++) {
-            measurements[i] = "s" + i;
+            measurements[i] = "s" + getIndexString(i+1,columnNum);
             dataTypes[i] = TSDataType.INT64;
         }
         schemaList.add(
@@ -207,5 +242,14 @@ public class IoTDBSessionVectorIT {
             session.insertTablet(tablet);
             tablet.reset();
         }
+    }
+
+    private String getIndexString(int index, int total){
+        StringBuilder sb = new StringBuilder(String.valueOf(index));
+        String totalStr = String.valueOf(total);
+        while (sb.length()<totalStr.length()){
+            sb.insert(0,"0");
+        }
+        return sb.toString();
     }
 }

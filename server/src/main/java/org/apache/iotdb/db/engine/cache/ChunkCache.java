@@ -133,14 +133,17 @@ public class ChunkCache {
   public Chunk getTimeChunk(
       ChunkMetadata timeChunkMetadata, List<ChunkMetadata> valueChunkMetadatas) throws IOException {
     if (CACHE_ENABLE && CACHE_VECTOR_ENABLE) {
-      // explicitly put cache
-      TsFileSequenceReader reader =
-          FileReaderManager.getInstance()
-              .get(timeChunkMetadata.getFilePath(), timeChunkMetadata.isClosed());
-      Map<ChunkMetadata, Chunk> map =
-          reader.readMemVectorChunk(timeChunkMetadata, valueChunkMetadatas);
-      lruCache.putAll(map);
-      Chunk chunk = lruCache.get(timeChunkMetadata);
+      Chunk chunk = lruCache.getIfPresent(timeChunkMetadata);
+      if(chunk==null){
+        // explicitly put cache
+        TsFileSequenceReader reader =
+                FileReaderManager.getInstance()
+                        .get(timeChunkMetadata.getFilePath(), timeChunkMetadata.isClosed());
+        Map<ChunkMetadata, Chunk> map =
+                reader.readMemVectorChunk(timeChunkMetadata, valueChunkMetadatas);
+        lruCache.putAll(map);
+        chunk = map.get(timeChunkMetadata);
+      }
       return new Chunk(
           chunk.getHeader(),
           chunk.getData().duplicate(),
