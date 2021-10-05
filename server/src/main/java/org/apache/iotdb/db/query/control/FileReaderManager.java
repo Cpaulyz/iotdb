@@ -159,7 +159,7 @@ public class FileReaderManager implements IService {
     Map<String, TsFileSequenceReader> readerMap =
         !isClosed ? unclosedFileReaderMap : closedFileReaderMap;
     if (!readerMap.containsKey(filePath)) {
-
+      System.out.println("new file reader");
       if (readerMap.size() >= MAX_CACHED_FILE_SIZE) {
         logger.warn("Query has opened {} files !", readerMap.size());
       }
@@ -167,8 +167,10 @@ public class FileReaderManager implements IService {
       TsFileSequenceReader tsFileReader = null;
       // check if the file is old version
       if (!isClosed) {
+        System.out.println("UnClosedTsFileReader");
         tsFileReader = new UnClosedTsFileReader(filePath);
       } else {
+        System.out.println("TsFileSequenceReader");
         tsFileReader = new TsFileSequenceReader(filePath);
         if (tsFileReader.readVersionNumber() != TSFileConfig.VERSION_NUMBER) {
           tsFileReader.close();

@@ -134,13 +134,13 @@ public class ChunkCache {
       ChunkMetadata timeChunkMetadata, List<ChunkMetadata> valueChunkMetadatas) throws IOException {
     if (CACHE_ENABLE && CACHE_VECTOR_ENABLE) {
       Chunk chunk = lruCache.getIfPresent(timeChunkMetadata);
-      if(chunk==null){
+      if (chunk == null) {
         // explicitly put cache
         TsFileSequenceReader reader =
-                FileReaderManager.getInstance()
-                        .get(timeChunkMetadata.getFilePath(), timeChunkMetadata.isClosed());
+            FileReaderManager.getInstance()
+                .get(timeChunkMetadata.getFilePath(), timeChunkMetadata.isClosed());
         Map<ChunkMetadata, Chunk> map =
-                reader.readMemVectorChunk(timeChunkMetadata, valueChunkMetadatas);
+            reader.readMemVectorChunk(timeChunkMetadata, valueChunkMetadatas);
         lruCache.putAll(map);
         chunk = map.get(timeChunkMetadata);
       }

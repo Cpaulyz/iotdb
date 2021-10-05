@@ -46,6 +46,9 @@ import org.apache.iotdb.tsfile.read.reader.IPageReader;
 import org.apache.iotdb.tsfile.read.reader.chunk.ChunkReader;
 import org.apache.iotdb.tsfile.read.reader.chunk.VectorChunkReader;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -54,6 +57,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 public class FileLoaderUtils {
+
+  private static final Logger logger = LoggerFactory.getLogger(FileLoaderUtils.class);
 
   private FileLoaderUtils() {}
 
@@ -281,14 +286,17 @@ public class FileLoaderUtils {
       } else {
         VectorChunkMetadata vectorChunkMetadata = (VectorChunkMetadata) chunkMetaData;
         ChunkCache.getInstance().clear();
-        System.out.println("vector chunk cache status is "+ ChunkCache.CACHE_VECTOR_ENABLE);
-        long startTime =  System.currentTimeMillis();
+        logger.info("vector chunk cache status is " + ChunkCache.CACHE_VECTOR_ENABLE);
+        long startTime = System.currentTimeMillis();
         Chunk timeChunk = vectorChunkMetadata.getTimeChunk();
+        long readTimeEndTime = System.currentTimeMillis();
+        logger.info("read time chunk, using time: " + (readTimeEndTime - startTime) + " ms");
         List<Chunk> valueChunkList = vectorChunkMetadata.getValueChunkList();
+        long readValueEndTime = System.currentTimeMillis();
+        logger.info(
+            "read value chunks, using time: " + (readValueEndTime - readTimeEndTime) + " ms");
+        logger.info("end reading, using time: " + (readValueEndTime - startTime) + " ms");
         chunkReader = new VectorChunkReader(timeChunk, valueChunkList, timeFilter);
-        long endTime =  System.currentTimeMillis();
-        long usedTime = endTime-startTime;
-        System.out.println("end reading, using time: "+usedTime +" ms");
       }
     }
     return chunkReader.loadPageReaderList();

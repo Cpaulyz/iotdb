@@ -55,8 +55,7 @@ import org.apache.iotdb.tsfile.write.schema.MeasurementSchema;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -882,18 +881,25 @@ public class TsFileSequenceReader implements AutoCloseable {
       long endOffset = -1;
       ChunkMetadata lastChunkMetadata = null;
       for (ChunkMetadata metadata : valueChunkMetadatas) {
-          if( metadata.getOffsetOfChunkHeader() > endOffset){
-              endOffset = metadata.getOffsetOfChunkHeader();
-              lastChunkMetadata = metadata;
-          }
+        if (metadata.getOffsetOfChunkHeader() > endOffset) {
+          endOffset = metadata.getOffsetOfChunkHeader();
+          lastChunkMetadata = metadata;
+        }
       }
       if (endOffset != -1) {
-          // compute true endOffset
-          int lastChunkHeaderSize = ChunkHeader.getSerializedSize(lastChunkMetadata.getMeasurementUid());
-          ChunkHeader lastHeader = readChunkHeader(lastChunkMetadata.getOffsetOfChunkHeader(), lastChunkHeaderSize);
-          endOffset += lastHeader.getSerializedSize()+lastHeader.getDataSize();
+        // compute true endOffset
+        int lastChunkHeaderSize =
+            ChunkHeader.getSerializedSize(lastChunkMetadata.getMeasurementUid());
+        ChunkHeader lastHeader =
+            readChunkHeader(lastChunkMetadata.getOffsetOfChunkHeader(), lastChunkHeaderSize);
+        endOffset += lastHeader.getSerializedSize() + lastHeader.getDataSize();
+        logger.info(
+            "read len = " + (endOffset - timeChunkMetadata.getOffsetOfChunkHeader()) / 1024 + "KB");
+        long startTime = System.currentTimeMillis();
         ByteBuffer buffer =
             readData(timeChunkMetadata.getOffsetOfChunkHeader(), endOffset); // read once
+        long readEndTime = System.currentTimeMillis();
+        logger.info("readData: " + (readEndTime - startTime) + " ms");
         // load time chunk
         int headSize = ChunkHeader.getSerializedSize(timeChunkMetadata.getMeasurementUid());
         ChunkHeader header = ChunkHeader.deserializeFrom(buffer, headSize);
@@ -906,17 +912,19 @@ public class TsFileSequenceReader implements AutoCloseable {
                 ByteBuffer.wrap(chunkBuffer),
                 timeChunkMetadata.getDeleteIntervalList(),
                 timeChunkMetadata.getStatistics()));
+        long endLoadTimeTime = System.currentTimeMillis();
+        logger.info("loadTimeChunk: " + (endLoadTimeTime - readEndTime) + " ms");
         // load value chunk
         for (ChunkMetadata metadata : valueChunkMetadatas) {
           if (metadata.getOffsetOfChunkHeader() < endOffset) {
             buffer.position(
-                (int) (metadata.getOffsetOfChunkHeader()
+                (int)
+                    (metadata.getOffsetOfChunkHeader()
                         - timeChunkMetadata.getOffsetOfChunkHeader()));
             headSize = ChunkHeader.getSerializedSize(metadata.getMeasurementUid());
             header = ChunkHeader.deserializeFrom(buffer, headSize);
             chunkBuffer = new byte[header.getDataSize()];
-            buffer.get(
-                chunkBuffer,0, header.getDataSize());
+            buffer.get(chunkBuffer, 0, header.getDataSize());
             res.put(
                 metadata,
                 new Chunk(
@@ -926,6 +934,8 @@ public class TsFileSequenceReader implements AutoCloseable {
                     metadata.getStatistics()));
           }
         }
+        long endLoadValueTime = System.currentTimeMillis();
+        logger.info("loadValueChunk: " + (endLoadValueTime - endLoadTimeTime) + " ms");
       } else {
         ChunkHeader header =
             readChunkHeader(timeChunkMetadata.getOffsetOfChunkHeader(), chunkHeadSize);
@@ -1038,6 +1048,20 @@ public class TsFileSequenceReader implements AutoCloseable {
       }
     }
     buffer.flip();
+    // try to remove cache
+//    try {
+//      Runtime rt = Runtime.getRuntime();
+//      Process proc = rt.exec("vmtouch /opt/iotdb-server-0.13.0-SNAPSHOT/data", null, null);
+//      InputStream stderr = proc.getInputStream();
+//      InputStreamReader isr = new InputStreamReader(stderr, "GBK");
+//      BufferedReader br = new BufferedReader(isr);
+//      String line = "";
+//      while ((line = br.readLine()) != null) {
+//        logger.info(line);
+//      }
+//    } catch (Exception e) {
+//      e.printStackTrace();
+//    }
     return buffer;
   }
 
