@@ -38,23 +38,19 @@ import java.util.stream.Collectors;
 public class IoTDBSessionVectorIT {
   private static final String ROOT_SG1_D1_VECTOR1 = "root.sg_2.d1.vector";
 
-  private String generatePath(int num) {
-    return String.format("root.sg_%d.d1.vector", num);
-  }
-
   private Session session;
 
-  private static int rowNum = 100000;
-  private static int colNum = 6;
-  private static int startTest = 5;
+  private static int rowNum = 10000;
+  private static int colNum = 100;
+  private static int startTest = 1;
 
   @Before
   public void setUp() throws Exception {
     //    System.setProperty(IoTDBConstant.IOTDB_CONF, "src/test/resources/");
     //    EnvironmentUtils.closeStatMonitor();
     //    EnvironmentUtils.envSetUp();
-        session = new Session("127.0.0.1", 6667, "root", "root");
-//    session = new Session("192.168.41.132", 6667, "root", "root");
+    session = new Session("127.0.0.1", 6667, "root", "root");
+    //    session = new Session("192.168.41.132", 6667, "root", "root");
     session.open();
   }
 
@@ -67,11 +63,9 @@ public class IoTDBSessionVectorIT {
 
   @Test
   public void createTimeSeries() throws StatementExecutionException, IoTDBConnectionException {
-    for (int col = startTest; col <= colNum; col++) {
-      System.out.println("insert" + col);
-      insertTabletWithAlignedTimeseriesMethod(rowNum, col);
-      session.executeNonQueryStatement("flush");
-    }
+    System.out.println("insert" + colNum);
+    insertTabletWithAlignedTimeseriesMethod(rowNum, colNum);
+    session.executeNonQueryStatement("flush");
   }
 
   @Test
@@ -132,8 +126,8 @@ public class IoTDBSessionVectorIT {
         for (int col = 2; col <= colNum; col++) {
           System.out.println("====================" + col + "======================");
           String sql =
-              String.format("select * from %s.s%s", generatePath(col), getIndexString(1, col));
-          sql += String.format(", %s.s%s", generatePath(col), getIndexString(col, col));
+              String.format("select * from %s.s%s", ROOT_SG1_D1_VECTOR1, getIndexString(1, col));
+          sql += String.format(", %s.s%s", ROOT_SG1_D1_VECTOR1, getIndexString(col, col));
           csvData.add(testSelectTime(col, sql));
         }
         saveToFile("bad_cache_" + i + ".csv", csvData);
@@ -161,9 +155,9 @@ public class IoTDBSessionVectorIT {
         for (int col = startTest; col <= colNum; col++) {
           System.out.println("====================" + col + "======================");
           String sql =
-              String.format("select * from %s.s%s", generatePath(col), getIndexString(1, col));
+              String.format("select * from %s.s%s", ROOT_SG1_D1_VECTOR1, getIndexString(1, col));
           for (int j = 2; j <= col; j++) {
-            sql += String.format(", %s.s%s", generatePath(col), getIndexString(j, col));
+            sql += String.format(", %s.s%s", ROOT_SG1_D1_VECTOR1, getIndexString(j, col));
           }
           //                    int finalCol = col;
           //                    String finalSql = sql;
@@ -218,7 +212,7 @@ public class IoTDBSessionVectorIT {
   private SessionDataSet selectTest(String sql)
       throws StatementExecutionException, IoTDBConnectionException {
     SessionDataSet dataSet = session.executeQueryStatement(sql);
-            System.out.println(dataSet.getColumnNames());
+    System.out.println(dataSet.getColumnNames());
     dataSet.closeOperationHandle();
     return dataSet;
   }
@@ -237,7 +231,7 @@ public class IoTDBSessionVectorIT {
     }
     schemaList.add(new VectorMeasurementSchema("vector", measurements, dataTypes));
 
-    Tablet tablet = new Tablet(generatePath(columnNum), schemaList);
+    Tablet tablet = new Tablet(ROOT_SG1_D1_VECTOR1, schemaList);
     tablet.setAligned(true);
     long timestamp = 0;
 
@@ -245,8 +239,7 @@ public class IoTDBSessionVectorIT {
       int rowIndex = tablet.rowSize++;
       tablet.addTimestamp(rowIndex, timestamp);
       for (int i = 0; i < columnNum; i++) {
-        tablet.addValue(
-            schemaList.get(0).getValueMeasurementIdList().get(i), rowIndex, row * 10L + i);
+        tablet.addValue(schemaList.get(0).getSubMeasurementsList().get(i), rowIndex, row * 10L + i);
       }
       if (tablet.rowSize == tablet.getMaxRowNumber()) {
         session.insertTablet(tablet, true);

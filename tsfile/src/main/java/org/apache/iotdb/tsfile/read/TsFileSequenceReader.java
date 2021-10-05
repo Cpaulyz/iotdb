@@ -1058,19 +1058,19 @@ public class TsFileSequenceReader implements AutoCloseable {
     }
     buffer.flip();
     // try to remove cache
-//    try {
-//      Runtime rt = Runtime.getRuntime();
-//      Process proc = rt.exec("vmtouch /opt/iotdb-server-0.13.0-SNAPSHOT/data", null, null);
-//      InputStream stderr = proc.getInputStream();
-//      InputStreamReader isr = new InputStreamReader(stderr, "GBK");
-//      BufferedReader br = new BufferedReader(isr);
-//      String line = "";
-//      while ((line = br.readLine()) != null) {
-//        logger.info(line);
-//      }
-//    } catch (Exception e) {
-//      e.printStackTrace();
-//    }
+    //    try {
+    //      Runtime rt = Runtime.getRuntime();
+    //      Process proc = rt.exec("vmtouch /opt/iotdb-server-0.13.0-SNAPSHOT/data", null, null);
+    //      InputStream stderr = proc.getInputStream();
+    //      InputStreamReader isr = new InputStreamReader(stderr, "GBK");
+    //      BufferedReader br = new BufferedReader(isr);
+    //      String line = "";
+    //      while ((line = br.readLine()) != null) {
+    //        logger.info(line);
+    //      }
+    //    } catch (Exception e) {
+    //      e.printStackTrace();
+    //    }
     return buffer;
   }
 
