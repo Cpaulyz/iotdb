@@ -29,7 +29,9 @@
 
 <img style="width:100%; max-width:800px; max-height:600px; margin-left:auto; margin-right:auto; display:block;" src="https://user-images.githubusercontent.com/19167280/123542457-5f511d00-d77c-11eb-8006-562d83069baa.png">
 
-IoTDB 模型结构涉及如下基本概念：
+IoTDB 模型结构涉及的基本概念在下文将做详细叙述。
+
+### 物理量、实体、存储组、路径
 
 * 物理量（Measurement，也称工况、字段 field）
 
@@ -61,6 +63,46 @@ IoTDB 模型结构涉及如下基本概念：
 
 存储组节点名只支持中英文字符、数字、下划线和中划线的组合。例如`root. 存储组_1-组1` 。
 
+* 路径（Path）
+
+在 IoTDB 中，路径是指符合以下约束的表达式：
+
+```
+path: LayerName (DOT LayerName)+
+LayerName: Identifier | STAR
+```
+
+其中 STAR 为 `*` 或 `**`，DOT 为 `.`。
+
+我们称一个路径中在两个“.”中间的部分叫做一个层级，则`root.a.b.c`为一个层级为 4 的路径。
+
+值得说明的是，在路径中，root 为一个保留字符，它只允许出现在下文提到的时间序列的开头，若其他层级出现 root，则无法解析，提示报错。
+
+在路径中，不允许使用单引号。如果你想在 LayerName 中使用`.`等特殊字符，请使用双引号。例如，`root.sg."d.1"."s.1"`。双引号内支持使用转义符进行双引号的嵌套，如 `root.sg.d1."s.\"t\"1"`。
+
+除了 storage group 存储组，其他的 LayerName 中不用加双引号就支持的字符如下：
+
+* 中文字符"\u2E80"到"\u9FFF"
+* "+"，"&"，"%"，"$"，"#"，"@"，"/"，"_"，"-"，":"
+* "A"到"Z"，"a"到"z"，"0"到"9"
+
+其中'-' 和 ':' 不能放置在第一位，不能使用单个 '+'。
+
+> 注意：storage group 中的 LayerName 只支持数字，字母，汉字，下划线和中划线。另外，如果在 Windows 系统上部署，存储组层级名称是大小写不敏感的。例如同时创建`root.ln` 和 `root.LN` 是不被允许的。
+
+* 路径模式（Path Pattern）
+  
+为了使得在表达多个时间序列的时候更加方便快捷，IoTDB 为用户提供带通配符`*`或`**`的路径。用户可以利用两种通配符构造出期望的路径模式。通配符可以出现在路径中的任何层。
+
+`*`在路径中表示一层。例如`root.vehicle.*.sensor1`代表的是以`root.vehicle`为前缀，以`sensor1`为后缀，层次等于 4 层的路径。
+
+`**`在路径中表示是（`*`）+，即为一层或多层`*`。例如`root.vehicle.device1.**`代表的是`root.vehicle.device1.*`, `root.vehicle.device1.*.*`, `root.vehicle.device1.*.*.*`等所有以`root.vehicle.device1`为前缀路径的大于等于 4 层的路径；`root.vehicle.**.sensor1`代表的是以`root.vehicle`为前缀，以`sensor1`为后缀，层次大于等于 4 层的路径。
+
+> 注意：`*`和`**`不能放在路径开头。
+
+
+### 一元、多元时间序列
+
 * 数据点（Data point）
 
 **一个“时间-值”对**。
@@ -87,172 +129,13 @@ IoTDB 模型结构涉及如下基本概念：
 
 在后续数据定义语言、数据操作语言和 Java 原生接口章节，将对涉及到对齐时间序列的各种操作进行逐一介绍。
 
+* 时间戳类型
+
+时间戳是一个数据到来的时间点，其中包括绝对时间戳和相对时间戳，详细描述参见数据类型文档。
+
+
+### 物理量模板
+
 * 物理量模板（Measurement template，v0.13 起支持）
 
-实际应用中有许多实体所采集的物理量相同，即具有相同的工况名称和类型，可以声明一个**物理量模板**来定义可采集的物理量集合。将物理量模版挂在树形数据模式的任意节点上，表示该节点下的所有实体具有相同的物理量集合。
-
-目前每一个路径节点仅允许挂载一个物理量模板，实体将使用其自身或最近祖先的物理量模板作为有效模板。
-
-* 路径
-
-在 IoTDB 中，路径是指符合以下约束的表达式：
-
-```
-path: LayerName (DOT LayerName)+
-LayerName: Identifier | STAR
-```
-
-其中 STAR 为“*”，DOT 为“.”。
-
-我们称一个路径中在两个“.”中间的部分叫做一个层级，则`root.a.b.c`为一个层级为 4 的路径。
-
-值得说明的是，在路径中，root 为一个保留字符，它只允许出现在下文提到的时间序列的开头，若其他层级出现 root，则无法解析，提示报错。
-
-在路径中，不允许使用单引号。如果你想在 LayerName 中使用`.`等特殊字符，请使用双引号。例如，`root.sg."d.1"."s.1"`。双引号内支持使用转义符进行双引号的嵌套，如 `root.sg.d1."s.\"t\"1"`。
-
-除了 storage group 存储组，其他的 LayerName 中不用加双引号就支持的字符如下：
-
-* 中文字符"\u2E80"到"\u9FFF"
-* "+"，"&"，"%"，"$"，"#"，"@"，"/"，"_"，"-"，":"
-* "A"到"Z"，"a"到"z"，"0"到"9"
-
-其中'-' 和 ':' 不能放置在第一位，不能使用单个 '+'。
-
-> 注意：storage group 中的 LayerName 只支持数字，字母，汉字，下划线和中划线。另外，如果在 Windows 系统上部署，存储组层级名称是大小写不敏感的。例如同时创建`root.ln` 和 `root.LN` 是不被允许的。
-
-* 前缀路径
-
-前缀路径是指一个时间序列的前缀所在的路径，一个前缀路径包含以该路径为前缀的所有时间序列。例如当前我们有`root.vehicle.device1.sensor1`, `root.vehicle.device1.sensor2`, `root.vehicle.device2.sensor1`三个传感器，则`root.vehicle.device1`前缀路径包含`root.vehicle.device1.sensor1`、`root.vehicle.device1.sensor2`两个时间序列，而不包含`root.vehicle.device2.sensor1`。
-
-* 带`*`路径
-为了使得在表达多个时间序列或表达前缀路径的时候更加方便快捷，IoTDB 为用户提供带`*`路径。`*`可以出现在路径中的任何层。按照`*`出现的位置，带`*`路径可以分为两种：
-
-`*`出现在路径的结尾；
-
-`*`出现在路径的中间；
-
-当`*`出现在路径的结尾时，其代表的是（`*`）+，即为一层或多层`*`。例如`root.vehicle.device1.*`代表的是`root.vehicle.device1.*`, `root.vehicle.device1.*.*`, `root.vehicle.device1.*.*.*`等所有以`root.vehicle.device1`为前缀路径的大于等于 4 层的路径。
-
-当`*`出现在路径的中间，其代表的是`*`本身，即为一层。例如`root.vehicle.*.sensor1`代表的是以`root.vehicle`为前缀，以`sensor1`为后缀，层次等于 4 层的路径。
-
-> 注意：`*`不能放在路径开头。
-
-> 注意：`*`放在末尾时与前缀路径表意相同，例如`root.vehicle.*`与`root.vehicle`为相同含义。
-
-> 注意：`*`create 创建时，后面的路径同时不能含有`*`。 
-
-* 时间戳
-
-时间戳是一个数据到来的时间点，其中包括绝对时间戳和相对时间戳。
-
-* 绝对时间戳
-
-IOTDB 中绝对时间戳分为二种，一种为 LONG 类型，一种为 DATETIME 类型（包含 DATETIME-INPUT, DATETIME-DISPLAY 两个小类）。
-
-在用户在输入时间戳时，可以使用 LONG 类型的时间戳或 DATETIME-INPUT 类型的时间戳，其中 DATETIME-INPUT 类型的时间戳支持格式如表所示：
-
-<center>**DATETIME-INPUT 类型支持格式**
-
-|format|
-|:---|
-|yyyy-MM-dd HH:mm:ss|
-|yyyy/MM/dd HH:mm:ss|
-|yyyy.MM.dd HH:mm:ss|
-|yyyy-MM-dd'T'HH:mm:ss|
-|yyyy/MM/dd'T'HH:mm:ss|
-|yyyy.MM.dd'T'HH:mm:ss|
-|yyyy-MM-dd HH:mm:ssZZ|
-|yyyy/MM/dd HH:mm:ssZZ|
-|yyyy.MM.dd HH:mm:ssZZ|
-|yyyy-MM-dd'T'HH:mm:ssZZ|
-|yyyy/MM/dd'T'HH:mm:ssZZ|
-|yyyy.MM.dd'T'HH:mm:ssZZ|
-|yyyy/MM/dd HH:mm:ss.SSS|
-|yyyy-MM-dd HH:mm:ss.SSS|
-|yyyy.MM.dd HH:mm:ss.SSS|
-|yyyy/MM/dd'T'HH:mm:ss.SSS|
-|yyyy-MM-dd'T'HH:mm:ss.SSS|
-|yyyy.MM.dd'T'HH:mm:ss.SSS|
-|yyyy-MM-dd HH:mm:ss.SSSZZ|
-|yyyy/MM/dd HH:mm:ss.SSSZZ|
-|yyyy.MM.dd HH:mm:ss.SSSZZ|
-|yyyy-MM-dd'T'HH:mm:ss.SSSZZ|
-|yyyy/MM/dd'T'HH:mm:ss.SSSZZ|
-|yyyy.MM.dd'T'HH:mm:ss.SSSZZ|
-|ISO8601 standard time format|
-
-</center>
-
-IoTDB 在显示时间戳时可以支持 LONG 类型以及 DATETIME-DISPLAY 类型，其中 DATETIME-DISPLAY 类型可以支持用户自定义时间格式。自定义时间格式的语法如表所示：
-
-<center>**DATETIME-DISPLAY 自定义时间格式的语法**
-
-|Symbol|Meaning|Presentation|Examples|
-|:---:|:---:|:---:|:---:|
-|G|era|era|era|
-|C|century of era (>=0)|	number|	20|
-| Y	|year of era (>=0)|	year|	1996|
-|||||
-| x	|weekyear|	year|	1996|
-| w	|week of weekyear|	number	|27|
-| e	|day of week	|number|	2|
-| E	|day of week	|text	|Tuesday; Tue|
-|||||
-| y|	year|	year|	1996|
-| D	|day of year	|number|	189|
-| M	|month of year	|month|	July; Jul; 07|
-| d	|day of month	|number|	10|
-|||||
-| a	|halfday of day	|text	|PM|
-| K	|hour of halfday (0~11)	|number|	0|
-| h	|clockhour of halfday (1~12)	|number|	12|
-|||||
-| H	|hour of day (0~23)|	number|	0|
-| k	|clockhour of day (1~24)	|number|	24|
-| m	|minute of hour|	number|	30|
-| s	|second of minute|	number|	55|
-| S	|fraction of second	|millis|	978|
-|||||
-| z	|time zone	|text	|Pacific Standard Time; PST|
-| Z	|time zone offset/id|	zone|	-0800; -08:00; America/Los_Angeles|
-|||||
-| '|	escape for text	|delimiter|	　|
-| ''|	single quote|	literal	|'|
-
-</center>
-
-* 相对时间戳
-
-  相对时间是指与服务器时间```now()```和```DATETIME```类型时间相差一定时间间隔的时间。
-  形式化定义为：
-
-  ```
-  Duration = (Digit+ ('Y'|'MO'|'W'|'D'|'H'|'M'|'S'|'MS'|'US'|'NS'))+
-  RelativeTime = (now() | DATETIME) ((+|-) Duration)+
-  ```
-
-  <center>**The syntax of the duration unit**
-
-  |Symbol|Meaning|Presentation|Examples|
-  |:---:|:---:|:---:|:---:|
-  |y|year|1y=365 days|1y|
-  |mo|month|1mo=30 days|1mo|
-  |w|week|1w=7 days|1w|
-  |d|day|1d=1 day|1d|
-  |||||
-  |h|hour|1h=3600 seconds|1h|
-  |m|minute|1m=60 seconds|1m|
-  |s|second|1s=1 second|1s|
-  |||||
-  |ms|millisecond|1ms=1000_000 nanoseconds|1ms|
-  |us|microsecond|1us=1000 nanoseconds|1us|
-  |ns|nanosecond|1ns=1 nanosecond|1ns|
-
-  </center>
-
-  例子：
-  ```
-  now() - 1d2h //比服务器时间早 1 天 2 小时的时间
-  now() - 1w //比服务器时间早 1 周的时间
-  ```
-  > 注意：'+'和'-'的左右两边必须有空格 
+实际应用中有许多实体所采集的物理量相同，即具有相同的工况名称和类型，可以声明一个**物理量模板**来定义可采集的物理量集合。在实践中，物理量模板的使用可帮助减少元数据的资源占用，详细内容参见物理量模板文档。

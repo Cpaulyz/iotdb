@@ -27,7 +27,11 @@ According to the enterprise organization structure and equipment entity hierarch
 
 <center><img style="width:100%; max-width:800px; max-height:600px; margin-left:auto; margin-right:auto; display:block;" src="https://user-images.githubusercontent.com/19167280/122668849-b1c69280-d1ec-11eb-83cb-3b73c40bdf72.png"></center>
 
-Here are the basic concepts of the model involved in IoTDB:
+Here are the basic concepts of the model involved in IoTDB. 
+
+
+
+### Measurement, Entity, Storage Group, Path
 
 * Measurement (Also called field)
 
@@ -57,6 +61,50 @@ After a storage group is set, the ancestral layers, children and descendant laye
 
 The Layer Name of storage group can only consist of characters, numbers, underscores and hyphen, like `root.storagegroup_1-sg1`.
 
+* Path
+
+In IoTDB, a path is an expression that conforms to the following constraints:
+
+```
+path: LayerName (DOT LayerName)+
+LayerName: Identifier | STAR
+```
+
+Among them, STAR is `*` or `**` and DOT is `.`.
+
+We call the middle part of a path between two "." as a layer, and thus `root.A.B.C` is a path with four layers. 
+
+It is worth noting that in the path, root is a reserved character, which is only allowed to appear at the beginning of the time series mentioned below. If root appears in other layers, it cannot be parsed and an error is reported.
+
+Single quotes are not allowed in the path. If you want to use special characters such as "." in LayerName, use double quotes. For example, `root.sg."d.1"."s.1"`. 
+
+The characters supported in LayerName without double quotes are as below:
+
+* Chinese characters '\u2E80' to '\u9FFF'
+* '+', '&', '%', '$', '#', '@', '/', '_', '-', ':'
+* 'A' to 'Z', 'a' to 'z', '0' to '9'
+* '[', ']' (eg. 's[1', 's[1]', s[ab]')
+
+'-' and ':' cannot be the first character. '+' cannot use alone.
+
+> Note: the LayerName of storage group can only be characters, numbers, underscores and hyphen. 
+>
+> Besides, if deploy on Windows system, the LayerName is case-insensitive, which means it's not allowed to set storage groups `root.ln` and `root.LN` at the same time.
+
+
+* Path Pattern
+
+In order to make it easier and faster to express multiple timeseries paths, IoTDB provides users with the path pattern. Users can construct a path pattern by using wildcard `*` and `**`. Wildcard can appear in any layer of the path. 
+
+`*` represents one layer. For example, `root.vehicle.*.sensor1` represents a 4-layer path which is prefixed with `root.vehicle` and suffixed with `sensor1`.
+
+`**` represents (`*`)+, which is one or more layers of `*`. For example, `root.vehicle.device1.*` represents all paths prefixed by `root.vehicle.device1` with layers greater than or equal to 4, like `root.vehicle.device1.*`, `root.vehicle.device1.*.*`, `root.vehicle.device1.*.*.*`, etc; `root.vehicle.**.sensor1` represents a path which is prefixed with `root.vehicle` and suffixed with `sensor1` and has at least 4 layers.
+
+> Note1: Wildcard `*` and `**` cannot be placed at the beginning of the path.
+
+
+### Timeseries
+
 * Data point
 
 **A "time-value" pair**.
@@ -80,179 +128,17 @@ By using multi-variable timeseries, the timestamp columns of a group of multi-va
 
 In the following chapters of data definition language, data operation language and Java Native Interface, various operations related to multi-variable timeseries will be introduced one by one.
 
+* Timestamp
+
+The timestamp is the time point at which data is produced. It includes absolute timestamps and relative timestamps. For detailed description, please go to Data Type doc.
+
+
+
+### Measurement Template
+
 
 * Measurement template (From v0.13)
 
-In the actual scenario, many entities collect the same measurements, that is, they have the same measurements name and type. A **measurement template** can be declared to define the collectable measurements set. Measurement template is hung on any node of the tree data pattern, which means that all entities under the node have the same measurements set.
+In the actual scenario, many entities collect the same measurements, that is, they have the same measurements name and type. A **measurement template** can be declared to define the collectable measurements set. Measurement template helps save memory by implementing schema sharing. For detailed description, please refer to Measurement Template doc.
 
-Currently you can only set one **measurement template** on a specific path. An entity will use it's own measurement template or nearest ancestor's measurement template.
-
-In the following chapters of data definition language, data operation language and Java Native Interface, various operations related to measurement template will be introduced one by one.
-
-* Path
-
-In IoTDB, a path is an expression that conforms to the following constraints:
-
-```
-path: LayerName (DOT LayerName)+
-LayerName: Identifier | STAR
-```
-
-Among them, STAR is "*" and DOT is ".".
-
-We call the middle part of a path between two "." as a layer, and thus `root.A.B.C` is a path with four layers. 
-
-It is worth noting that in the path, root is a reserved character, which is only allowed to appear at the beginning of the time series mentioned below. If root appears in other layers, it cannot be parsed and an error is reported.
-
-Single quotes are not allowed in the path. If you want to use special characters such as "." in LayerName, use double quotes. For example, `root.sg."d.1"."s.1"`. 
-
-The characters supported in LayerName without double quotes are as below:
-
-* Chinese characters '\u2E80' to '\u9FFF'
-* '+', '&', '%', '$', '#', '@', '/', '_', '-', ':'
-* 'A' to 'Z', 'a' to 'z', '0' to '9'
-* '[', ']' (eg. 's[1', 's[1]', s[ab]')
-
-'-' and ':' cannot be the first character. '+' cannot use alone.
-
-> Note: the LayerName of storage group can only be characters, numbers, underscores and hyphen. 
-> 
-> Besides, if deploy on Windows system, the LayerName is case-insensitive, which means it's not allowed to set storage groups `root.ln` and `root.LN` at the same time.
-
-
-* Prefix Path
-
-The prefix path refers to the path where the prefix of a timeseries path is located. A prefix path contains all timeseries paths prefixed by the path. For example, suppose that we have three sensors: `root.vehicle.device1.sensor1`, `root.vehicle.device1.sensor2`, `root.vehicle.device2.sensor1`, the prefix path `root.vehicle.device1` contains two timeseries paths `root.vehicle.device1.sensor1` and `root.vehicle.device1.sensor2` while `root.vehicle.device2.sensor1` is excluded.
-
-* Path With Star
-
-In order to make it easier and faster to express multiple timeseries paths or prefix paths, IoTDB provides users with the path pith star. `*` can appear in any layer of the path. According to the position where `*` appears, the path with star can be divided into two types:
-
-`*` appears at the end of the path;
-
-`*` appears in the middle of the path;
-
-When `*` appears at the end of the path, it represents (`*`)+, which is one or more layers of `*`. For example, `root.vehicle.device1.*` represents all paths prefixed by `root.vehicle.device1` with layers greater than or equal to 4, like `root.vehicle.device1.*`, `root.vehicle.device1.*.*`, `root.vehicle.device1.*.*.*`, etc.
-
-When `*` appears in the middle of the path, it represents `*` itself, i.e., a layer. For example, `root.vehicle.*.sensor1` represents a 4-layer path which is prefixed with `root.vehicle` and suffixed with `sensor1`.   
-
-> Note1: `*` cannot be placed at the beginning of the path.
-
-> Note2: A path with `*` at the end has the same meaning as a prefix path, e.g., `root.vehicle.*` and `root.vehicle` is the same.
-
-* Timestamp
-
-The timestamp is the time point at which data is produced. It includes absolute timestamps and relative timestamps
-
-* Absolute timestamp
-
-Absolute timestamps in IoTDB are divided into two types: LONG and DATETIME (including DATETIME-INPUT and DATETIME-DISPLAY). When a user inputs a timestamp, he can use a LONG type timestamp or a DATETIME-INPUT type timestamp, and the supported formats of the DATETIME-INPUT type timestamp are shown in the table below:
-
-<center>**Supported formats of DATETIME-INPUT type timestamp**
-
-
-|Format|
-|:---:|
-|yyyy-MM-dd HH:mm:ss|
-|yyyy/MM/dd HH:mm:ss|
-|yyyy.MM.dd HH:mm:ss|
-|yyyy-MM-dd'T'HH:mm:ss|
-|yyyy/MM/dd'T'HH:mm:ss|
-|yyyy.MM.dd'T'HH:mm:ss|
-|yyyy-MM-dd HH:mm:ssZZ|
-|yyyy/MM/dd HH:mm:ssZZ|
-|yyyy.MM.dd HH:mm:ssZZ|
-|yyyy-MM-dd'T'HH:mm:ssZZ|
-|yyyy/MM/dd'T'HH:mm:ssZZ|
-|yyyy.MM.dd'T'HH:mm:ssZZ|
-|yyyy/MM/dd HH:mm:ss.SSS|
-|yyyy-MM-dd HH:mm:ss.SSS|
-|yyyy.MM.dd HH:mm:ss.SSS|
-|yyyy/MM/dd'T'HH:mm:ss.SSS|
-|yyyy-MM-dd'T'HH:mm:ss.SSS|
-|yyyy.MM.dd'T'HH:mm:ss.SSS|
-|yyyy-MM-dd HH:mm:ss.SSSZZ|
-|yyyy/MM/dd HH:mm:ss.SSSZZ|
-|yyyy.MM.dd HH:mm:ss.SSSZZ|
-|yyyy-MM-dd'T'HH:mm:ss.SSSZZ|
-|yyyy/MM/dd'T'HH:mm:ss.SSSZZ|
-|yyyy.MM.dd'T'HH:mm:ss.SSSZZ|
-|ISO8601 standard time format|
-
-</center>
-
-
-IoTDB can support LONG types and DATETIME-DISPLAY types when displaying timestamps. The DATETIME-DISPLAY type can support user-defined time formats. The syntax of the custom time format is shown in the table below:
-
-<center>**The syntax of the custom time format**
-
-|Symbol|Meaning|Presentation|Examples|
-|:---:|:---:|:---:|:---:|
-|G|era|era|era|
-|C|century of era (>=0)|	number|	20|
-| Y	|year of era (>=0)|	year|	1996|
-|||||
-| x	|weekyear|	year|	1996|
-| w	|week of weekyear|	number	|27|
-| e	|day of week	|number|	2|
-| E	|day of week	|text	|Tuesday; Tue|
-|||||
-| y|	year|	year|	1996|
-| D	|day of year	|number|	189|
-| M	|month of year	|month|	July; Jul; 07|
-| d	|day of month	|number|	10|
-|||||
-| a	|halfday of day	|text	|PM|
-| K	|hour of halfday (0~11)	|number|	0|
-| h	|clockhour of halfday (1~12)	|number|	12|
-|||||
-| H	|hour of day (0~23)|	number|	0|
-| k	|clockhour of day (1~24)	|number|	24|
-| m	|minute of hour|	number|	30|
-| s	|second of minute|	number|	55|
-| S	|fraction of second	|millis|	978|
-|||||
-| z	|time zone	|text	|Pacific Standard Time; PST|
-| Z	|time zone offset/id|	zone|	-0800; -08:00; America/Los_Angeles|
-|||||
-| '|	escape for text	|delimiter|	　|
-| ''|	single quote|	literal	|'|
-
-</center>
-
-* Relative timestamp
-
-Relative time refers to the time relative to the server time ```now()``` and ```DATETIME``` time.
-
- Syntax:
- ```
-  Duration = (Digit+ ('Y'|'MO'|'W'|'D'|'H'|'M'|'S'|'MS'|'US'|'NS'))+
-  RelativeTime = (now() | DATETIME) ((+|-) Duration)+
-        
- ```
-
-  <center>**The syntax of the duration unit**
-
-|Symbol|Meaning|Presentation|Examples|
-|:---:|:---:|:---:|:---:|
-|y|year|1y=365 days|1y|
-|mo|month|1mo=30 days|1mo|
-|w|week|1w=7 days|1w|
-|d|day|1d=1 day|1d|
-|||||
-|h|hour|1h=3600 seconds|1h|
-|m|minute|1m=60 seconds|1m|
-|s|second|1s=1 second|1s|
-|||||
-|ms|millisecond|1ms=1000_000 nanoseconds|1ms|
-|us|microsecond|1us=1000 nanoseconds|1us|
-|ns|nanosecond|1ns=1 nanosecond|1ns|
-
-  </center>
-
-  eg：
-  ```
-  now() - 1d2h //1 day and 2 hours earlier than the current server time
-  now() - 1w //1 week earlier than the current server time
-  ```
-  > Note：There must be spaces on the left and right of '+' and '-'.
+In the following chapters of, data definition language, data operation language and Java Native Interface, various operations related to measurement template will be introduced one by one.

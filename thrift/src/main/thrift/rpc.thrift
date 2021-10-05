@@ -61,6 +61,8 @@ struct TSExecuteStatementResp {
   // for disable align statements, queryDataSet is null and nonAlignQueryDataSet is not null
   8: optional TSQueryNonAlignDataSet nonAlignQueryDataSet
   9: optional map<string, i32> columnNameIndexMap
+  10: optional list<string> sgColumns
+  11: optional list<byte> aliasColumns
 }
 
 enum TSProtocolVersion {
@@ -119,6 +121,8 @@ struct TSExecuteStatementReq {
   5: optional i64 timeout
 
   6: optional bool enableRedirectQuery;
+
+  7: optional bool jdbcQuery;
 }
 
 struct TSExecuteBatchStatementReq{
@@ -203,10 +207,11 @@ struct TSInsertRecordReq {
 
 struct TSInsertStringRecordReq {
   1: required i64 sessionId
-  2: required string deviceId
+  2: required string prefixPath
   3: required list<string> measurements
   4: required list<string> values
   5: required i64 timestamp
+  6: optional bool isAligned
 }
 
 struct TSInsertTabletReq {
@@ -222,36 +227,40 @@ struct TSInsertTabletReq {
 
 struct TSInsertTabletsReq {
   1: required i64 sessionId
-  2: required list<string> deviceIds
+  2: required list<string> prefixPaths
   3: required list<list<string>> measurementsList
   4: required list<binary> valuesList
   5: required list<binary> timestampsList
   6: required list<list<i32>> typesList
   7: required list<i32> sizeList
+  8: optional bool isAligned
 }
 
 struct TSInsertRecordsReq {
   1: required i64 sessionId
-  2: required list<string> deviceIds
+  2: required list<string> prefixPaths
   3: required list<list<string>> measurementsList
   4: required list<binary> valuesList
   5: required list<i64> timestamps
+  6: optional bool isAligned
 }
 
 struct TSInsertRecordsOfOneDeviceReq {
     1: required i64 sessionId
-    2: required string deviceId
+    2: required string prefixPath
     3: required list<list<string>> measurementsList
     4: required list<binary> valuesList
     5: required list<i64> timestamps
+    6: optional bool isAligned
 }
 
 struct TSInsertStringRecordsReq {
   1: required i64 sessionId
-  2: required list<string> deviceIds
+  2: required list<string> prefixPaths
   3: required list<list<string>> measurementsList
   4: required list<list<string>> valuesList
   5: required list<i64> timestamps
+  6: optional bool isAligned
 }
 
 struct TSDeleteDataReq {
@@ -291,6 +300,7 @@ struct TSRawDataQueryReq {
   5: required i64 endTime
   6: required i64 statementId
   7: optional bool enableRedirectQuery;
+  8: optional bool jdbcQuery;
 }
 
 struct TSLastDataQueryReq {
@@ -300,6 +310,7 @@ struct TSLastDataQueryReq {
   4: required i64 time
   5: required i64 statementId
   6: optional bool enableRedirectQuery;
+  7: optional bool jdbcQuery;
 }
 
 struct TSCreateMultiTimeseriesReq {
@@ -318,6 +329,13 @@ struct ServerProperties {
   1: required string version;
   2: required list<string> supportedTimeAggregationOperations;
   3: required string timestampPrecision;
+  4: i32 maxConcurrentClientNum;
+  5: optional string watermarkSecretKey;
+  6: optional string watermarkBitString
+  7: optional i32 watermarkParamMarkRate;
+  8: optional i32 watermarkParamMaxRightBit;
+  9: optional i32 thriftMaxFrameSize;
+  10:optional bool isReadOnly;
 }
 
 struct TSSetSchemaTemplateReq {

@@ -48,18 +48,17 @@ public class HybridTimeseriesSessionExample {
 
     // set session fetchSize
     session.setFetchSize(10000);
-
-    //    insertRecord(ROOT_SG1_D2, 0, 100);
-    //    insertTabletWithAlignedTimeseriesMethod(0, 100);
-    //    insertRecord(ROOT_SG1_D1, 0, 100);
-    //    session.executeNonQueryStatement("flush");
+    insertRecord(ROOT_SG1_D2, 0, 100);
+    insertTabletWithAlignedTimeseriesMethod(0, 100);
+    insertRecord(ROOT_SG1_D1, 0, 100);
+    session.executeNonQueryStatement("flush");
     selectTest();
 
     session.close();
   }
 
   private static void selectTest() throws StatementExecutionException, IoTDBConnectionException {
-    SessionDataSet dataSet = session.executeQueryStatement("select * from root.sg_1.d1.vector");
+    SessionDataSet dataSet = session.executeQueryStatement("select * from root.sg_1.d1");
     System.out.println(dataSet.getColumnNames());
     while (dataSet.hasNext()) {
       System.out.println(dataSet.next());
@@ -86,10 +85,9 @@ public class HybridTimeseriesSessionExample {
     for (long row = minTime; row < maxTime; row++) {
       int rowIndex = tablet.rowSize++;
       tablet.addTimestamp(rowIndex, timestamp);
+      tablet.addValue(schemaList.get(0).getSubMeasurementsList().get(0), rowIndex, row * 10 + 1L);
       tablet.addValue(
-          schemaList.get(0).getValueMeasurementIdList().get(0), rowIndex, row * 10 + 1L);
-      tablet.addValue(
-          schemaList.get(0).getValueMeasurementIdList().get(1), rowIndex, (int) (row * 10 + 2));
+          schemaList.get(0).getSubMeasurementsList().get(1), rowIndex, (int) (row * 10 + 2));
 
       if (tablet.rowSize == tablet.getMaxRowNumber()) {
         session.insertTablet(tablet, true);

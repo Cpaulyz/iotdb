@@ -22,14 +22,13 @@ import org.apache.iotdb.db.conf.IoTDBDescriptor;
 import org.apache.iotdb.db.engine.fileSystem.SystemFileFactory;
 import org.apache.iotdb.db.exception.metadata.MetadataException;
 import org.apache.iotdb.db.metadata.MetadataConstant;
-import org.apache.iotdb.db.metadata.MetadataOperationType;
 import org.apache.iotdb.db.metadata.PartialPath;
-import org.apache.iotdb.db.metadata.mnode.MNode;
-import org.apache.iotdb.db.metadata.mnode.MeasurementMNode;
-import org.apache.iotdb.db.metadata.mnode.StorageGroupMNode;
+import org.apache.iotdb.db.metadata.mnode.IMNode;
+import org.apache.iotdb.db.metadata.mnode.IMeasurementMNode;
+import org.apache.iotdb.db.metadata.mnode.IStorageGroupMNode;
 import org.apache.iotdb.db.qp.physical.PhysicalPlan;
 import org.apache.iotdb.db.qp.physical.crud.CreateTemplatePlan;
-import org.apache.iotdb.db.qp.physical.crud.SetDeviceTemplatePlan;
+import org.apache.iotdb.db.qp.physical.crud.SetSchemaTemplatePlan;
 import org.apache.iotdb.db.qp.physical.sys.AutoCreateDeviceMNodePlan;
 import org.apache.iotdb.db.qp.physical.sys.ChangeAliasPlan;
 import org.apache.iotdb.db.qp.physical.sys.ChangeTagOffsetPlan;
@@ -43,14 +42,14 @@ import org.apache.iotdb.db.qp.physical.sys.MNodePlan;
 import org.apache.iotdb.db.qp.physical.sys.MeasurementMNodePlan;
 import org.apache.iotdb.db.qp.physical.sys.SetStorageGroupPlan;
 import org.apache.iotdb.db.qp.physical.sys.SetTTLPlan;
-import org.apache.iotdb.db.qp.physical.sys.SetUsingDeviceTemplatePlan;
+import org.apache.iotdb.db.qp.physical.sys.SetUsingSchemaTemplatePlan;
 import org.apache.iotdb.db.qp.physical.sys.StorageGroupMNodePlan;
 import org.apache.iotdb.db.writelog.io.LogWriter;
 import org.apache.iotdb.tsfile.file.metadata.enums.CompressionType;
 import org.apache.iotdb.tsfile.file.metadata.enums.TSDataType;
 import org.apache.iotdb.tsfile.file.metadata.enums.TSEncoding;
 import org.apache.iotdb.tsfile.fileSystem.FSFactoryProducer;
-import org.apache.iotdb.tsfile.write.schema.MeasurementSchema;
+import org.apache.iotdb.tsfile.write.schema.UnaryMeasurementSchema;
 
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
@@ -173,11 +172,11 @@ public class MLogWriter implements AutoCloseable {
     putLog(plan);
   }
 
-  public void createDeviceTemplate(CreateTemplatePlan plan) throws IOException {
+  public void createSchemaTemplate(CreateTemplatePlan plan) throws IOException {
     putLog(plan);
   }
 
-  public void setDeviceTemplate(SetDeviceTemplatePlan plan) throws IOException {
+  public void setSchemaTemplate(SetSchemaTemplatePlan plan) throws IOException {
     putLog(plan);
   }
 
@@ -185,7 +184,7 @@ public class MLogWriter implements AutoCloseable {
     putLog(plan);
   }
 
-  public void serializeMNode(MNode node) throws IOException {
+  public void serializeMNode(IMNode node) throws IOException {
     int childSize = 0;
     if (node.getChildren() != null) {
       childSize = node.getChildren().size();
@@ -194,7 +193,7 @@ public class MLogWriter implements AutoCloseable {
     putLog(plan);
   }
 
-  public void serializeMeasurementMNode(MeasurementMNode node) throws IOException {
+  public void serializeMeasurementMNode(IMeasurementMNode node) throws IOException {
     int childSize = 0;
     if (node.getChildren() != null) {
       childSize = node.getChildren().size();
@@ -205,7 +204,7 @@ public class MLogWriter implements AutoCloseable {
     putLog(plan);
   }
 
-  public void serializeStorageGroupMNode(StorageGroupMNode node) throws IOException {
+  public void serializeStorageGroupMNode(IStorageGroupMNode node) throws IOException {
     int childSize = 0;
     if (node.getChildren() != null) {
       childSize = node.getChildren().size();
@@ -215,8 +214,8 @@ public class MLogWriter implements AutoCloseable {
     putLog(plan);
   }
 
-  public void setUsingDeviceTemplate(PartialPath path) throws IOException {
-    SetUsingDeviceTemplatePlan plan = new SetUsingDeviceTemplatePlan(path);
+  public void setUsingSchemaTemplate(PartialPath path) throws IOException {
+    SetUsingSchemaTemplatePlan plan = new SetUsingSchemaTemplatePlan(path);
     putLog(plan);
   }
 
@@ -443,7 +442,7 @@ public class MLogWriter implements AutoCloseable {
             words[2].equals("") ? null : words[2],
             Long.parseLong(words[words.length - 2]),
             Integer.parseInt(words[words.length - 1]),
-            new MeasurementSchema(
+            new UnaryMeasurementSchema(
                 words[1],
                 TSDataType.values()[Integer.parseInt(words[3])],
                 TSEncoding.values()[Integer.parseInt(words[4])],

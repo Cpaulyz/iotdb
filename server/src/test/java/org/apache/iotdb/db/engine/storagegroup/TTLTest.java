@@ -34,8 +34,9 @@ import org.apache.iotdb.db.exception.metadata.MetadataException;
 import org.apache.iotdb.db.exception.query.OutOfTTLException;
 import org.apache.iotdb.db.exception.query.QueryProcessException;
 import org.apache.iotdb.db.metadata.PartialPath;
+import org.apache.iotdb.db.metadata.mnode.IMeasurementMNode;
+import org.apache.iotdb.db.metadata.mnode.IStorageGroupMNode;
 import org.apache.iotdb.db.metadata.mnode.MeasurementMNode;
-import org.apache.iotdb.db.metadata.mnode.StorageGroupMNode;
 import org.apache.iotdb.db.qp.Planner;
 import org.apache.iotdb.db.qp.executor.PlanExecutor;
 import org.apache.iotdb.db.qp.physical.crud.InsertRowPlan;
@@ -54,7 +55,7 @@ import org.apache.iotdb.tsfile.read.common.BatchData;
 import org.apache.iotdb.tsfile.read.common.RowRecord;
 import org.apache.iotdb.tsfile.read.query.dataset.QueryDataSet;
 import org.apache.iotdb.tsfile.read.reader.IBatchReader;
-import org.apache.iotdb.tsfile.write.schema.MeasurementSchema;
+import org.apache.iotdb.tsfile.write.schema.UnaryMeasurementSchema;
 
 import org.junit.After;
 import org.junit.Before;
@@ -139,7 +140,7 @@ public class TTLTest {
 
     // normally set ttl
     IoTDB.metaManager.setTTL(new PartialPath(sg1), ttl);
-    StorageGroupMNode mNode =
+    IStorageGroupMNode mNode =
         IoTDB.metaManager.getStorageGroupNodeByStorageGroupPath(new PartialPath(sg1));
     assertEquals(ttl, mNode.getDataTTL());
 
@@ -159,9 +160,12 @@ public class TTLTest {
     plan.setDataTypes(new TSDataType[] {TSDataType.INT64});
     plan.setValues(new Object[] {1L});
     plan.setMeasurementMNodes(
-        new MeasurementMNode[] {
-          new MeasurementMNode(
-              null, null, new MeasurementSchema("s1", TSDataType.INT64, TSEncoding.PLAIN), null)
+        new IMeasurementMNode[] {
+          MeasurementMNode.getMeasurementMNode(
+              null,
+              "s1",
+              new UnaryMeasurementSchema("s1", TSDataType.INT64, TSEncoding.PLAIN),
+              null)
         });
     plan.transferType();
 
@@ -192,9 +196,12 @@ public class TTLTest {
     plan.setDataTypes(new TSDataType[] {TSDataType.INT64});
     plan.setValues(new Object[] {1L});
     plan.setMeasurementMNodes(
-        new MeasurementMNode[] {
-          new MeasurementMNode(
-              null, null, new MeasurementSchema("s1", TSDataType.INT64, TSEncoding.PLAIN), null)
+        new IMeasurementMNode[] {
+          MeasurementMNode.getMeasurementMNode(
+              null,
+              "s1",
+              new UnaryMeasurementSchema("s1", TSDataType.INT64, TSEncoding.PLAIN),
+              null)
         });
     plan.transferType();
 

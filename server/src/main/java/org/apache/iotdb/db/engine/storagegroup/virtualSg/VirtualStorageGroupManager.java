@@ -27,7 +27,7 @@ import org.apache.iotdb.db.exception.StorageEngineException;
 import org.apache.iotdb.db.exception.StorageGroupProcessorException;
 import org.apache.iotdb.db.exception.TsFileProcessorException;
 import org.apache.iotdb.db.metadata.PartialPath;
-import org.apache.iotdb.db.metadata.mnode.StorageGroupMNode;
+import org.apache.iotdb.db.metadata.mnode.IStorageGroupMNode;
 import org.apache.iotdb.rpc.TSStatusCode;
 import org.apache.iotdb.tsfile.utils.Pair;
 
@@ -105,11 +105,29 @@ public class VirtualStorageGroupManager {
     }
   }
 
-  /** push check memtable flush interval down to all sg */
-  public void timedFlushMemTable() {
+  /** push check sequence memtable flush interval down to all sg */
+  public void timedFlushSeqMemTable() {
     for (StorageGroupProcessor storageGroupProcessor : virtualStorageGroupProcessor) {
       if (storageGroupProcessor != null) {
-        storageGroupProcessor.timedFlushMemTable();
+        storageGroupProcessor.timedFlushSeqMemTable();
+      }
+    }
+  }
+
+  /** push check unsequence memtable flush interval down to all sg */
+  public void timedFlushUnseqMemTable() {
+    for (StorageGroupProcessor storageGroupProcessor : virtualStorageGroupProcessor) {
+      if (storageGroupProcessor != null) {
+        storageGroupProcessor.timedFlushUnseqMemTable();
+      }
+    }
+  }
+
+  /** push check TsFileProcessor close interval down to all sg */
+  public void timedCloseTsFileProcessor() {
+    for (StorageGroupProcessor storageGroupProcessor : virtualStorageGroupProcessor) {
+      if (storageGroupProcessor != null) {
+        storageGroupProcessor.timedCloseTsFileProcessor();
       }
     }
   }
@@ -123,7 +141,7 @@ public class VirtualStorageGroupManager {
   @SuppressWarnings("java:S2445")
   // actually storageGroupMNode is a unique object on the mtree, synchronize it is reasonable
   public StorageGroupProcessor getProcessor(
-      PartialPath partialPath, StorageGroupMNode storageGroupMNode)
+      PartialPath partialPath, IStorageGroupMNode storageGroupMNode)
       throws StorageGroupProcessorException, StorageEngineException {
     int loc = partitioner.deviceToVirtualStorageGroupId(partialPath);
 
@@ -162,7 +180,7 @@ public class VirtualStorageGroupManager {
    * @param futures virtual storage group recover tasks
    */
   public void asyncRecover(
-      StorageGroupMNode storageGroupMNode, ExecutorService pool, List<Future<Void>> futures) {
+      IStorageGroupMNode storageGroupMNode, ExecutorService pool, List<Future<Void>> futures) {
     for (int i = 0; i < partitioner.getPartitionCount(); i++) {
       int cur = i;
       Callable<Void> recoverVsgTask =
@@ -281,11 +299,16 @@ public class VirtualStorageGroupManager {
   }
 
   /** push delete operation down to all virtual storage group processors */
-  public void delete(PartialPath path, long startTime, long endTime, long planIndex)
+  public void delete(
+      PartialPath path,
+      long startTime,
+      long endTime,
+      long planIndex,
+      TimePartitionFilter timePartitionFilter)
       throws IOException {
     for (StorageGroupProcessor storageGroupProcessor : virtualStorageGroupProcessor) {
       if (storageGroupProcessor != null) {
-        storageGroupProcessor.delete(path, startTime, endTime, planIndex);
+        storageGroupProcessor.delete(path, startTime, endTime, planIndex, timePartitionFilter);
       }
     }
   }

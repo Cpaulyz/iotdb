@@ -28,11 +28,13 @@ import org.apache.iotdb.session.SessionDataSet.DataIterator;
 import org.apache.iotdb.tsfile.file.metadata.enums.CompressionType;
 import org.apache.iotdb.tsfile.file.metadata.enums.TSDataType;
 import org.apache.iotdb.tsfile.file.metadata.enums.TSEncoding;
+import org.apache.iotdb.tsfile.utils.BitMap;
 import org.apache.iotdb.tsfile.write.record.Tablet;
 import org.apache.iotdb.tsfile.write.schema.IMeasurementSchema;
-import org.apache.iotdb.tsfile.write.schema.MeasurementSchema;
+import org.apache.iotdb.tsfile.write.schema.UnaryMeasurementSchema;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -68,10 +70,12 @@ public class SessionExample {
       }
     }
 
+    // createTemplate();
     createTimeseries();
     createMultiTimeseries();
     insertRecord();
     insertTablet();
+    insertTabletWithNullValues();
     insertTablets();
     insertRecords();
     selectInto();
@@ -213,6 +217,37 @@ public class SessionExample {
     }
   }
 
+  private static void createTemplate()
+      throws IoTDBConnectionException, StatementExecutionException {
+    List<List<String>> measurementList = new ArrayList<>();
+    measurementList.add(Collections.singletonList("s1"));
+    measurementList.add(Collections.singletonList("s2"));
+    measurementList.add(Collections.singletonList("s3"));
+
+    List<List<TSDataType>> dataTypeList = new ArrayList<>();
+    dataTypeList.add(Collections.singletonList(TSDataType.INT64));
+    dataTypeList.add(Collections.singletonList(TSDataType.INT64));
+    dataTypeList.add(Collections.singletonList(TSDataType.INT64));
+
+    List<List<TSEncoding>> encodingList = new ArrayList<>();
+    encodingList.add(Collections.singletonList(TSEncoding.RLE));
+    encodingList.add(Collections.singletonList(TSEncoding.RLE));
+    encodingList.add(Collections.singletonList(TSEncoding.RLE));
+
+    List<CompressionType> compressionTypes = new ArrayList<>();
+    for (int i = 0; i < 3; i++) {
+      compressionTypes.add(CompressionType.SNAPPY);
+    }
+    List<String> schemaNames = new ArrayList<>();
+    schemaNames.add("s1");
+    schemaNames.add("s2");
+    schemaNames.add("s3");
+
+    session.createSchemaTemplate(
+        "template1", schemaNames, measurementList, dataTypeList, encodingList, compressionTypes);
+    session.setSchemaTemplate("template1", "root.sg1");
+  }
+
   private static void insertRecord() throws IoTDBConnectionException, StatementExecutionException {
     String deviceId = ROOT_SG1_D1;
     List<String> measurements = new ArrayList<>();
@@ -349,9 +384,9 @@ public class SessionExample {
     // The schema of measurements of one device
     // only measurementId and data type in MeasurementSchema take effects in Tablet
     List<IMeasurementSchema> schemaList = new ArrayList<>();
-    schemaList.add(new MeasurementSchema("s1", TSDataType.INT64));
-    schemaList.add(new MeasurementSchema("s2", TSDataType.INT64));
-    schemaList.add(new MeasurementSchema("s3", TSDataType.INT64));
+    schemaList.add(new UnaryMeasurementSchema("s1", TSDataType.INT64));
+    schemaList.add(new UnaryMeasurementSchema("s2", TSDataType.INT64));
+    schemaList.add(new UnaryMeasurementSchema("s3", TSDataType.INT64));
 
     Tablet tablet = new Tablet(ROOT_SG1_D1, schemaList, 100);
 
@@ -400,13 +435,94 @@ public class SessionExample {
     }
   }
 
+  private static void insertTabletWithNullValues()
+      throws IoTDBConnectionException, StatementExecutionException {
+    /*
+     * A Tablet example:
+     *      device1
+     * time s1,   s2,   s3
+     * 1,   null, 1,    1
+     * 2,   2,    null, 2
+     * 3,   3,    3,    null
+     */
+    // The schema of measurements of one device
+    // only measurementId and data type in MeasurementSchema take effects in Tablet
+    List<IMeasurementSchema> schemaList = new ArrayList<>();
+    schemaList.add(new UnaryMeasurementSchema("s1", TSDataType.INT64));
+    schemaList.add(new UnaryMeasurementSchema("s2", TSDataType.INT64));
+    schemaList.add(new UnaryMeasurementSchema("s3", TSDataType.INT64));
+
+    Tablet tablet = new Tablet(ROOT_SG1_D1, schemaList, 100);
+
+    // Method 1 to add tablet data
+    tablet.bitMaps = new BitMap[schemaList.size()];
+    for (int s = 0; s < 3; s++) {
+      tablet.bitMaps[s] = new BitMap(tablet.getMaxRowNumber());
+    }
+
+    long timestamp = System.currentTimeMillis();
+    for (long row = 0; row < 100; row++) {
+      int rowIndex = tablet.rowSize++;
+      tablet.addTimestamp(rowIndex, timestamp);
+      for (int s = 0; s < 3; s++) {
+        long value = new Random().nextLong();
+        // mark null value
+        if (row % 3 == s) {
+          tablet.bitMaps[s].mark((int) row);
+        }
+        tablet.addValue(schemaList.get(s).getMeasurementId(), rowIndex, value);
+      }
+      if (tablet.rowSize == tablet.getMaxRowNumber()) {
+        session.insertTablet(tablet, true);
+        tablet.reset();
+      }
+      timestamp++;
+    }
+
+    if (tablet.rowSize != 0) {
+      session.insertTablet(tablet);
+      tablet.reset();
+    }
+
+    // Method 2 to add tablet data
+    long[] timestamps = tablet.timestamps;
+    Object[] values = tablet.values;
+    BitMap[] bitMaps = new BitMap[schemaList.size()];
+    for (int s = 0; s < 3; s++) {
+      bitMaps[s] = new BitMap(tablet.getMaxRowNumber());
+    }
+    tablet.bitMaps = bitMaps;
+
+    for (long time = 0; time < 100; time++) {
+      int row = tablet.rowSize++;
+      timestamps[row] = time;
+      for (int i = 0; i < 3; i++) {
+        long[] sensor = (long[]) values[i];
+        // mark null value
+        if (row % 3 == i) {
+          bitMaps[i].mark(row);
+        }
+        sensor[row] = i;
+      }
+      if (tablet.rowSize == tablet.getMaxRowNumber()) {
+        session.insertTablet(tablet, true);
+        tablet.reset();
+      }
+    }
+
+    if (tablet.rowSize != 0) {
+      session.insertTablet(tablet);
+      tablet.reset();
+    }
+  }
+
   private static void insertTablets() throws IoTDBConnectionException, StatementExecutionException {
     // The schema of measurements of one device
     // only measurementId and data type in MeasurementSchema take effects in Tablet
     List<IMeasurementSchema> schemaList = new ArrayList<>();
-    schemaList.add(new MeasurementSchema("s1", TSDataType.INT64));
-    schemaList.add(new MeasurementSchema("s2", TSDataType.INT64));
-    schemaList.add(new MeasurementSchema("s3", TSDataType.INT64));
+    schemaList.add(new UnaryMeasurementSchema("s1", TSDataType.INT64));
+    schemaList.add(new UnaryMeasurementSchema("s2", TSDataType.INT64));
+    schemaList.add(new UnaryMeasurementSchema("s3", TSDataType.INT64));
 
     Tablet tablet1 = new Tablet(ROOT_SG1_D1, schemaList, 100);
     Tablet tablet2 = new Tablet("root.sg1.d2", schemaList, 100);
@@ -679,7 +795,7 @@ public class SessionExample {
 
   private static void setTimeout() throws StatementExecutionException {
     Session tempSession = new Session(LOCAL_HOST, 6667, "root", "root", 10000, 20000);
-    tempSession.setTimeout(60000);
+    tempSession.setQueryTimeout(60000);
   }
 
   private static void createClusterSession() throws IoTDBConnectionException {

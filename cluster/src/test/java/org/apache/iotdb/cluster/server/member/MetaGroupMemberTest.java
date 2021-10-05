@@ -88,7 +88,7 @@ import org.apache.iotdb.db.exception.metadata.MetadataException;
 import org.apache.iotdb.db.exception.metadata.StorageGroupNotSetException;
 import org.apache.iotdb.db.exception.query.QueryProcessException;
 import org.apache.iotdb.db.metadata.PartialPath;
-import org.apache.iotdb.db.metadata.mnode.MeasurementMNode;
+import org.apache.iotdb.db.metadata.mnode.IMeasurementMNode;
 import org.apache.iotdb.db.qp.executor.PlanExecutor;
 import org.apache.iotdb.db.qp.physical.PhysicalPlan;
 import org.apache.iotdb.db.qp.physical.crud.InsertRowPlan;
@@ -303,7 +303,7 @@ public class MetaGroupMemberTest extends BaseMember {
     try {
       for (String prefixPath : prefixPaths) {
         if (!prefixPath.equals(TestUtils.getTestSeries(10, 0))) {
-          IoTDB.metaManager.collectSeries(new PartialPath(prefixPath), schemas);
+          IoTDB.metaManager.collectMeasurementSchema(new PartialPath(prefixPath), schemas);
           dataOutputStream.writeInt(schemas.size());
           for (IMeasurementSchema schema : schemas) {
             schema.partialSerializeTo(dataOutputStream);
@@ -588,7 +588,7 @@ public class MetaGroupMemberTest extends BaseMember {
       insertPlan.setTime(i);
       insertPlan.setValues(new Object[] {String.valueOf(i)});
       insertPlan.setMeasurementMNodes(
-          new MeasurementMNode[] {TestUtils.getTestMeasurementMNode(0)});
+          new IMeasurementMNode[] {TestUtils.getTestMeasurementMNode(0)});
       PlanExecutor planExecutor = new PlanExecutor();
       planExecutor.processNonQuery(insertPlan);
     }
@@ -696,8 +696,8 @@ public class MetaGroupMemberTest extends BaseMember {
   @Test
   public void testJoinClusterFailed() throws QueryProcessException {
     System.out.println("Start testJoinClusterFailed()");
-    long prevInterval = RaftServer.getHeartBeatIntervalMs();
-    RaftServer.setHeartBeatIntervalMs(10);
+    long prevInterval = RaftServer.getHeartbeatIntervalMs();
+    RaftServer.setHeartbeatIntervalMs(10);
     ClusterDescriptor.getInstance().getConfig().setJoinClusterTimeOutMs(100);
     dummyResponse.set(Response.RESPONSE_NO_CONNECTION);
     MetaGroupMember newMember = getMetaGroupMember(TestUtils.getNode(10));
@@ -708,7 +708,7 @@ public class MetaGroupMemberTest extends BaseMember {
       assertTrue(e instanceof StartUpCheckFailureException);
     } finally {
       newMember.closeLogManager();
-      RaftServer.setHeartBeatIntervalMs(prevInterval);
+      RaftServer.setHeartbeatIntervalMs(prevInterval);
     }
   }
 
@@ -913,7 +913,7 @@ public class MetaGroupMemberTest extends BaseMember {
         insertPlan.setTime(j);
         insertPlan.setValues(new Object[] {String.valueOf(j)});
         insertPlan.setMeasurementMNodes(
-            new MeasurementMNode[] {TestUtils.getTestMeasurementMNode(0)});
+            new IMeasurementMNode[] {TestUtils.getTestMeasurementMNode(0)});
         planExecutor.processNonQuery(insertPlan);
       }
     }
@@ -979,7 +979,7 @@ public class MetaGroupMemberTest extends BaseMember {
         insertPlan.setTime(j);
         insertPlan.setValues(new Object[] {String.valueOf(j)});
         insertPlan.setMeasurementMNodes(
-            new MeasurementMNode[] {TestUtils.getTestMeasurementMNode(0)});
+            new IMeasurementMNode[] {TestUtils.getTestMeasurementMNode(0)});
         planExecutor.processNonQuery(insertPlan);
       }
     }

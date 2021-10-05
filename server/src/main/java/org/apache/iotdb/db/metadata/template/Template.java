@@ -19,12 +19,13 @@
 package org.apache.iotdb.db.metadata.template;
 
 import org.apache.iotdb.db.metadata.PartialPath;
+import org.apache.iotdb.db.metadata.mnode.IMeasurementMNode;
 import org.apache.iotdb.db.metadata.mnode.MeasurementMNode;
 import org.apache.iotdb.db.qp.physical.crud.CreateTemplatePlan;
 import org.apache.iotdb.tsfile.file.metadata.enums.TSDataType;
 import org.apache.iotdb.tsfile.file.metadata.enums.TSEncoding;
 import org.apache.iotdb.tsfile.write.schema.IMeasurementSchema;
-import org.apache.iotdb.tsfile.write.schema.MeasurementSchema;
+import org.apache.iotdb.tsfile.write.schema.UnaryMeasurementSchema;
 import org.apache.iotdb.tsfile.write.schema.VectorMeasurementSchema;
 
 import org.apache.commons.lang3.builder.HashCodeBuilder;
@@ -76,7 +77,7 @@ public class Template {
       // normal measurement
       else {
         curSchema =
-            new MeasurementSchema(
+            new UnaryMeasurementSchema(
                 plan.getMeasurements().get(i).get(0),
                 plan.getDataTypes().get(i).get(0),
                 plan.getEncodings().get(i).get(0),
@@ -120,21 +121,25 @@ public class Template {
         || schemaMap.containsKey(path.getDevicePath().getMeasurement()));
   }
 
-  public List<MeasurementMNode> getMeasurementMNode() {
+  public boolean hasSchema(String measurementId) {
+    return schemaMap.containsKey(measurementId);
+  }
+
+  public List<IMeasurementMNode> getMeasurementMNode() {
     Set<IMeasurementSchema> deduplicateSchema = new HashSet<>();
-    List<MeasurementMNode> res = new ArrayList<>();
+    List<IMeasurementMNode> res = new ArrayList<>();
 
     for (IMeasurementSchema measurementSchema : schemaMap.values()) {
       if (deduplicateSchema.add(measurementSchema)) {
-        MeasurementMNode measurementMNode = null;
-        if (measurementSchema instanceof MeasurementSchema) {
+        IMeasurementMNode measurementMNode = null;
+        if (measurementSchema instanceof UnaryMeasurementSchema) {
           measurementMNode =
-              new MeasurementMNode(
+              MeasurementMNode.getMeasurementMNode(
                   null, measurementSchema.getMeasurementId(), measurementSchema, null);
 
         } else if (measurementSchema instanceof VectorMeasurementSchema) {
           measurementMNode =
-              new MeasurementMNode(
+              MeasurementMNode.getMeasurementMNode(
                   null,
                   getMeasurementNodeName(measurementSchema.getMeasurementId()),
                   measurementSchema,
@@ -163,7 +168,7 @@ public class Template {
       if (schemaEntry.getValue() instanceof VectorMeasurementSchema) {
         VectorMeasurementSchema vectorMeasurementSchema =
             (VectorMeasurementSchema) schemaEntry.getValue();
-        res.put(schemaEntry.getKey(), vectorMeasurementSchema.getValueMeasurementIdList());
+        res.put(schemaEntry.getKey(), vectorMeasurementSchema.getSubMeasurementsList());
       } else {
         res.put(schemaEntry.getKey(), new ArrayList<>());
       }

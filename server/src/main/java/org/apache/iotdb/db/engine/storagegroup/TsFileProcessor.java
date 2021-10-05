@@ -131,6 +131,9 @@ public class TsFileProcessor {
   /** working memtable */
   private IMemTable workMemTable;
 
+  /** last flush time to flush the working memtable */
+  private long lastWorkMemtableFlushTime;
+
   /** this callback is called before the workMemtable is added into the flushingMemTables. */
   private final UpdateEndTimeCallBack updateLatestFlushTimeCallback;
 
@@ -209,16 +212,18 @@ public class TsFileProcessor {
       }
     }
 
+    long[] memIncrements = null;
     if (enableMemControl) {
-      checkMemCostAndAddToTspInfo(insertRowPlan);
+      memIncrements = checkMemCostAndAddToTspInfo(insertRowPlan);
     }
-
-    workMemTable.insert(insertRowPlan);
 
     if (IoTDBDescriptor.getInstance().getConfig().isEnableWal()) {
       try {
         getLogNode().write(insertRowPlan);
       } catch (Exception e) {
+        if (enableMemControl && memIncrements != null) {
+          rollbackMemoryInfo(memIncrements);
+        }
         throw new WriteProcessException(
             String.format(
                 "%s: %s write WAL failed",
@@ -226,6 +231,8 @@ public class TsFileProcessor {
             e);
       }
     }
+
+    workMemTable.insert(insertRowPlan);
 
     // update start time of this memtable
     tsFileResource.updateStartTime(
@@ -240,8 +247,9 @@ public class TsFileProcessor {
   }
 
   /**
-   * insert batch data of insertTabletPlan into the workingMemtable The rows to be inserted are in
-   * the range [start, end)
+   * insert batch data of insertTabletPlan into the workingMemtable. The rows to be inserted are in
+   * the range [start, end). Null value in each column values will be replaced by the subsequent
+   * non-null value, e.g., {1, null, 3, null, 5} will be {1, 3, 5, null, 5}
    *
    * @param insertTabletPlan insert a tablet of a device
    * @param start start index of rows to be inserted in insertTabletPlan
@@ -261,9 +269,10 @@ public class TsFileProcessor {
       }
     }
 
+    long[] memIncrements = null;
     try {
       if (enableMemControl) {
-        checkMemCostAndAddToTspInfo(insertTabletPlan, start, end);
+        memIncrements = checkMemCostAndAddToTspInfo(insertTabletPlan, start, end);
       }
     } catch (WriteProcessException e) {
       for (int i = start; i < end; i++) {
@@ -271,8 +280,8 @@ public class TsFileProcessor {
       }
       throw new WriteProcessException(e);
     }
+
     try {
-      workMemTable.insertTablet(insertTabletPlan, start, end);
       if (IoTDBDescriptor.getInstance().getConfig().isEnableWal()) {
         insertTabletPlan.setStart(start);
         insertTabletPlan.setEnd(end);
@@ -282,8 +291,21 @@ public class TsFileProcessor {
       for (int i = start; i < end; i++) {
         results[i] = RpcUtils.getStatus(TSStatusCode.INTERNAL_SERVER_ERROR, e.getMessage());
       }
+      if (enableMemControl && memIncrements != null) {
+        rollbackMemoryInfo(memIncrements);
+      }
       throw new WriteProcessException(e);
     }
+
+    try {
+      workMemTable.insertTablet(insertTabletPlan, start, end);
+    } catch (WriteProcessException e) {
+      for (int i = start; i < end; i++) {
+        results[i] = RpcUtils.getStatus(TSStatusCode.INTERNAL_SERVER_ERROR, e.getMessage());
+      }
+      throw new WriteProcessException(e);
+    }
+
     for (int i = start; i < end; i++) {
       results[i] = RpcUtils.SUCCESS_STATUS;
     }
@@ -300,7 +322,7 @@ public class TsFileProcessor {
   }
 
   @SuppressWarnings("squid:S3776") // high Cognitive Complexity
-  private void checkMemCostAndAddToTspInfo(InsertRowPlan insertRowPlan)
+  private long[] checkMemCostAndAddToTspInfo(InsertRowPlan insertRowPlan)
       throws WriteProcessException {
     // memory of increased PrimitiveArray and TEXT values, e.g., add a long[128], add 128*8
     long memTableIncrement = 0L;
@@ -318,13 +340,14 @@ public class TsFileProcessor {
       if (workMemTable.checkIfChunkDoesNotExist(deviceId, insertRowPlan.getMeasurements()[i])) {
         // ChunkMetadataIncrement
         IMeasurementSchema schema = insertRowPlan.getMeasurementMNodes()[i].getSchema();
-        if (schema.getType() == TSDataType.VECTOR) {
+        if (insertRowPlan.isAligned()) {
           chunkMetadataIncrement +=
-              schema.getValueTSDataTypeList().size()
+              schema.getSubMeasurementsTSDataTypeList().size()
                   * ChunkMetadata.calculateRamSize(
-                      schema.getValueMeasurementIdList().get(0),
-                      schema.getValueTSDataTypeList().get(0));
-          memTableIncrement += TVList.vectorTvListArrayMemSize(schema.getValueTSDataTypeList());
+                      schema.getSubMeasurementsList().get(0),
+                      schema.getSubMeasurementsTSDataTypeList().get(0));
+          memTableIncrement +=
+              TVList.vectorTvListArrayMemSize(schema.getSubMeasurementsTSDataTypeList());
         } else {
           chunkMetadataIncrement +=
               ChunkMetadata.calculateRamSize(
@@ -347,12 +370,13 @@ public class TsFileProcessor {
       }
     }
     updateMemoryInfo(memTableIncrement, chunkMetadataIncrement, textDataIncrement);
+    return new long[] {memTableIncrement, textDataIncrement, chunkMetadataIncrement};
   }
 
-  private void checkMemCostAndAddToTspInfo(InsertTabletPlan insertTabletPlan, int start, int end)
+  private long[] checkMemCostAndAddToTspInfo(InsertTabletPlan insertTabletPlan, int start, int end)
       throws WriteProcessException {
     if (start >= end) {
-      return;
+      return new long[] {0, 0, 0};
     }
     long[] memIncrements = new long[3]; // memTable, text, chunk metadata
 
@@ -364,8 +388,8 @@ public class TsFileProcessor {
       if (insertTabletPlan.isAligned()) {
         VectorMeasurementSchema vectorSchema =
             (VectorMeasurementSchema) insertTabletPlan.getMeasurementMNodes()[i].getSchema();
-        Object[] columns = new Object[vectorSchema.getValueMeasurementIdList().size()];
-        for (int j = 0; j < vectorSchema.getValueMeasurementIdList().size(); j++) {
+        Object[] columns = new Object[vectorSchema.getSubMeasurementsList().size()];
+        for (int j = 0; j < vectorSchema.getSubMeasurementsList().size(); j++) {
           columns[j] = insertTabletPlan.getColumns()[columnIndex++];
         }
         updateVectorMemCost(vectorSchema, deviceId, start, end, memIncrements, columns);
@@ -388,6 +412,7 @@ public class TsFileProcessor {
     long textDataIncrement = memIncrements[1];
     long chunkMetadataIncrement = memIncrements[2];
     updateMemoryInfo(memTableIncrement, chunkMetadataIncrement, textDataIncrement);
+    return memIncrements;
   }
 
   private void updateMemCost(
@@ -436,8 +461,8 @@ public class TsFileProcessor {
       Object[] columns) {
     // memIncrements = [memTable, text, chunk metadata] respectively
 
-    List<String> measurementIds = vectorSchema.getValueMeasurementIdList();
-    List<TSDataType> dataTypes = vectorSchema.getValueTSDataTypeList();
+    List<String> measurementIds = vectorSchema.getSubMeasurementsList();
+    List<TSDataType> dataTypes = vectorSchema.getSubMeasurementsTSDataTypeList();
     if (workMemTable.checkIfChunkDoesNotExist(deviceId, vectorSchema.getMeasurementId())) {
       // ChunkMetadataIncrement
       memIncrements[2] +=
@@ -492,6 +517,19 @@ public class TsFileProcessor {
     workMemTable.addTextDataSize(textDataIncrement);
   }
 
+  private void rollbackMemoryInfo(long[] memIncrements) {
+    long memTableIncrement = memIncrements[0];
+    long textDataIncrement = memIncrements[1];
+    long chunkMetadataIncrement = memIncrements[2];
+
+    memTableIncrement += textDataIncrement;
+    storageGroupInfo.releaseStorageGroupMemCost(memTableIncrement);
+    tsFileProcessorInfo.releaseTSPMemCost(chunkMetadataIncrement);
+    SystemInfo.getInstance().resetStorageGroupStatus(storageGroupInfo);
+    workMemTable.releaseTVListRamCost(memTableIncrement);
+    workMemTable.releaseTextDataSize(textDataIncrement);
+  }
+
   /**
    * Delete data which belongs to the timeseries `deviceId.measurementId` and the timestamp of which
    * <= 'timestamp' in the deletion. <br>
@@ -509,11 +547,6 @@ public class TsFileProcessor {
         for (PartialPath device : devicePaths) {
           workMemTable.delete(
               deletion.getPath(), device, deletion.getStartTime(), deletion.getEndTime());
-          logger.info(
-              "[Deletion] Delete in-memory data with deletion path: {}, time:{}-{}.",
-              deletion.getPath(),
-              deletion.getStartTime(),
-              deletion.getEndTime());
         }
       }
       // flushing memTables are immutable, only record this deletion in these memTables for query
@@ -567,7 +600,8 @@ public class TsFileProcessor {
 
   public boolean shouldClose() {
     long fileSize = tsFileResource.getTsFileSize();
-    long fileSizeThreshold = IoTDBDescriptor.getInstance().getConfig().getTsFileSizeThreshold();
+    long fileSizeThreshold = sequence ? config.getSeqTsFileSize() : config.getUnSeqTsFileSize();
+
     if (fileSize >= fileSizeThreshold) {
       logger.info(
           "{} fileSize {} >= fileSizeThreshold {}",
@@ -801,6 +835,7 @@ public class TsFileProcessor {
       totalMemTableSize += tobeFlushed.memSize();
     }
     workMemTable = null;
+    lastWorkMemtableFlushTime = System.currentTimeMillis();
     FlushManager.getInstance().registerTsFileProcessor(this);
   }
 
@@ -1219,8 +1254,8 @@ public class TsFileProcessor {
         List<ChunkMetadata> timeChunkMetadataList =
             writer.getVisibleMetadataList(deviceId, measurementId, schema.getType());
         List<List<ChunkMetadata>> valueChunkMetadataList = new ArrayList<>();
-        List<String> valueMeasurementIdList = schema.getValueMeasurementIdList();
-        List<TSDataType> valueDataTypeList = schema.getValueTSDataTypeList();
+        List<String> valueMeasurementIdList = schema.getSubMeasurementsList();
+        List<TSDataType> valueDataTypeList = schema.getSubMeasurementsTSDataTypeList();
         for (int i = 0; i < valueMeasurementIdList.size(); i++) {
           valueChunkMetadataList.add(
               writer.getVisibleMetadataList(
@@ -1302,6 +1337,10 @@ public class TsFileProcessor {
   /** Return Long.MAX_VALUE if workMemTable is null */
   public long getWorkMemTableCreatedTime() {
     return workMemTable != null ? workMemTable.getCreatedTime() : Long.MAX_VALUE;
+  }
+
+  public long getLastWorkMemtableFlushTime() {
+    return lastWorkMemtableFlushTime;
   }
 
   public boolean isSequence() {
