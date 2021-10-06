@@ -40,8 +40,8 @@ public class IoTDBSessionVectorIT {
 
   private Session session;
 
-  private static int rowNum = 10000;
-  private static int colNum = 100;
+  private static int rowNum = 100000;
+  private static int colNum = 500;
   private static int startTest = 1;
 
   @Before
@@ -49,8 +49,8 @@ public class IoTDBSessionVectorIT {
     //    System.setProperty(IoTDBConstant.IOTDB_CONF, "src/test/resources/");
     //    EnvironmentUtils.closeStatMonitor();
     //    EnvironmentUtils.envSetUp();
-    session = new Session("127.0.0.1", 6667, "root", "root");
-    //    session = new Session("192.168.41.132", 6667, "root", "root");
+    //    session = new Session("127.0.0.1", 6667, "root", "root");
+    session = new Session("192.168.41.132", 6667, "root", "root");
     session.open();
   }
 
@@ -58,7 +58,7 @@ public class IoTDBSessionVectorIT {
   public void tearDown() throws Exception {
     //        session.deleteStorageGroup("root.sg_1");
     session.close();
-    //        EnvironmentUtils.cleanEnv();
+    //            EnvironmentUtils.cleanEnv();
   }
 
   @Test
@@ -69,65 +69,22 @@ public class IoTDBSessionVectorIT {
   }
 
   @Test
-  public void hybridCacheTest() {
-    String sql = "select * from root.sg_1.d1.vector.s" + getIndexString(1, colNum);
-    String allSql = "select * from root.sg_1.d1.vector.s" + getIndexString(1, colNum);
-    int time = 1;
-    try {
-      for (int i = 0; i < time; i++) {
-        ArrayList<ArrayList<String>> allCsvData = new ArrayList<>();
-        ArrayList<ArrayList<String>> badCsvData = new ArrayList<>();
-        ArrayList<String> header = new ArrayList<>();
-        header.add("columnNum");
-        header.add("non-cache");
-        header.add("cache");
-        header.add("diff");
-        allCsvData.add(header);
-        badCsvData.add(header);
-
-        selectTest(sql);
-
-        allCsvData.add(testSelectTime(1, sql));
-        for (int col = 2; col <= colNum; col++) {
-          allSql += ", root.sg_1.d1.vector.s" + getIndexString(col, colNum);
-          allCsvData.add(testSelectTime(col, allSql));
-          String badSql = sql + ", root.sg_1.d1.vector.s" + getIndexString(col, colNum);
-          badCsvData.add(testSelectTime(col, badSql));
-        }
-        saveToFile("all_cache_" + i + ".csv", allCsvData);
-        saveToFile("bad_cache_" + i + ".csv", badCsvData);
-      }
-    } catch (Exception e) {
-      e.printStackTrace();
-    }
-  }
-
-  @Test
   public void badCacheTest() {
-    //        String sql = String.format("select * from
-    // %s.s%s",generatePath(colNum),getIndexString(1,colNum));
-    int time = 1;
+    int time = 4;
     try {
       for (int i = 0; i < time; i++) {
         ArrayList<ArrayList<String>> csvData = new ArrayList<>();
         ArrayList<String> header = new ArrayList<>();
         header.add("columnNum");
-        header.add("non-cache");
         header.add("cache");
+        header.add("non-cache");
         header.add("diff");
         csvData.add(header);
-        //                selectTest(sql);
-        //                csvData.add(testSelectTime(1,sql));
-        //                for (int col = 2; col <= colNum; col ++) {
-        //                    String tmpSql = sql+",
-        // root.sg_1.d1.vector.s"+getIndexString(col,colNum);
-        //                    csvData.add(testSelectTime(col,tmpSql));
-        //                }
         for (int col = 2; col <= colNum; col++) {
           System.out.println("====================" + col + "======================");
-          String sql =
-              String.format("select * from %s.s%s", ROOT_SG1_D1_VECTOR1, getIndexString(1, col));
-          sql += String.format(", %s.s%s", ROOT_SG1_D1_VECTOR1, getIndexString(col, col));
+          String sql = String.format("select s" + getIndexString(1, colNum));
+          sql += String.format(", s%s", getIndexString(col, colNum));
+          sql += " from " + ROOT_SG1_D1_VECTOR1;
           csvData.add(testSelectTime(col, sql));
         }
         saveToFile("bad_cache_" + i + ".csv", csvData);
@@ -139,33 +96,23 @@ public class IoTDBSessionVectorIT {
 
   @Test
   public void allCacheTest() {
-    //        String sql = "select * from root.sg_1.d1.vector.s"+getIndexString(1,colNum);
-    int time = 1;
+    int time = 4;
     try {
       for (int i = 0; i < time; i++) {
         ArrayList<ArrayList<String>> csvData = new ArrayList<>();
         ArrayList<String> header = new ArrayList<>();
         header.add("columnNum");
-        header.add("non-cache");
         header.add("cache");
+        header.add("non-cache");
         header.add("diff");
         csvData.add(header);
-        //                selectTest(sql);
-        //                csvData.add(testSelectTime(1, sql));
         for (int col = startTest; col <= colNum; col++) {
           System.out.println("====================" + col + "======================");
-          String sql =
-              String.format("select * from %s.s%s", ROOT_SG1_D1_VECTOR1, getIndexString(1, col));
+          String sql = String.format("select s" + getIndexString(1, colNum));
           for (int j = 2; j <= col; j++) {
-            sql += String.format(", %s.s%s", ROOT_SG1_D1_VECTOR1, getIndexString(j, col));
+            sql += String.format(", s%s", getIndexString(j, colNum));
           }
-          //                    int finalCol = col;
-          //                    String finalSql = sql;
-          //                    Thread t = new Thread(new Runnable(){
-          //                        public void run(){
-          //                            testSelectTime(finalCol, finalSql);
-          //                        }});
-          //                    t.start();
+          sql += " from " + ROOT_SG1_D1_VECTOR1;
           csvData.add(testSelectTime(col, sql));
         }
         saveToFile("all_cache_" + i + ".csv", csvData);
@@ -179,18 +126,18 @@ public class IoTDBSessionVectorIT {
     ArrayList<String> line = new ArrayList<>();
     try {
       line.add(colNum + "");
-      ChunkCache.CACHE_VECTOR_ENABLE = false;
+      ChunkCache.CACHE_VECTOR_ENABLE = true;
       long startTime = System.currentTimeMillis();
       selectTest(sql);
       long endTime = System.currentTimeMillis();
       line.add(String.valueOf((endTime - startTime)));
-      System.out.println("no cache time: " + (endTime - startTime));
-      ChunkCache.CACHE_VECTOR_ENABLE = true;
+      System.out.println("cache time: " + (endTime - startTime));
+      ChunkCache.CACHE_VECTOR_ENABLE = false;
       startTime = System.currentTimeMillis();
       selectTest(sql);
       endTime = System.currentTimeMillis();
       line.add(String.valueOf((endTime - startTime)));
-      System.out.println("cache time: " + (endTime - startTime));
+      System.out.println("no cache time: " + (endTime - startTime));
       line.add(String.valueOf(Integer.parseInt(line.get(2)) - Integer.parseInt(line.get(1))));
     } catch (Exception e) {
       e.printStackTrace();
@@ -212,7 +159,8 @@ public class IoTDBSessionVectorIT {
   private SessionDataSet selectTest(String sql)
       throws StatementExecutionException, IoTDBConnectionException {
     SessionDataSet dataSet = session.executeQueryStatement(sql);
-    System.out.println(dataSet.getColumnNames());
+    //    System.out.println(dataSet.getColumnNames());
+    assert (dataSet.getColumnNames().size() > 1);
     dataSet.closeOperationHandle();
     return dataSet;
   }

@@ -27,7 +27,7 @@ import java.util.List;
 public interface IChunkLoader {
 
   /** read all content of any chunk. */
-  Chunk loadChunk(ChunkMetadata chunkMetaData) throws IOException;
+  Chunk loadChunk(ChunkMetadata chunkMetaData) throws IOException; // TODO: I
 
   /** close the file reader. */
   void close() throws IOException;

@@ -103,6 +103,7 @@ public class ChunkCache {
   public Chunk getTimeChunk(
       ChunkMetadata timeChunkMetadata, List<ChunkMetadata> valueChunkMetadatas) throws IOException {
     if (CACHE_ENABLE && CACHE_VECTOR_ENABLE) {
+      CACHE_VECTOR_ENABLE = false;
       Chunk chunk = lruCache.getIfPresent(timeChunkMetadata);
       if (chunk == null) {
         // explicitly put cache
@@ -121,6 +122,7 @@ public class ChunkCache {
           timeChunkMetadata.getStatistics());
 
     } else {
+      CACHE_VECTOR_ENABLE = true;
       return get(timeChunkMetadata, false);
     }
   }

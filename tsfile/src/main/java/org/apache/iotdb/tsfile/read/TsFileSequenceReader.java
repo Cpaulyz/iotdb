@@ -55,9 +55,7 @@ import org.apache.iotdb.tsfile.write.schema.UnaryMeasurementSchema;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.Serializable;
+import java.io.*;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -1041,6 +1039,19 @@ public class TsFileSequenceReader implements AutoCloseable {
    * @return data that been read.
    */
   protected ByteBuffer readData(long position, int size) throws IOException {
+    //    try {
+    //      Runtime rt = Runtime.getRuntime();
+    //      Process proc = rt.exec("vmtouch /opt/iotdb-server-0.13.0-SNAPSHOT/data", null, null);
+    //      InputStream stderr = proc.getInputStream();
+    //      InputStreamReader isr = new InputStreamReader(stderr, "GBK");
+    //      BufferedReader br = new BufferedReader(isr);
+    //      String line = "";
+    //      while ((line = br.readLine()) != null) {
+    //        logger.info(line);
+    //      }
+    //    } catch (Exception e) {
+    //      e.printStackTrace();
+    //    }
     ByteBuffer buffer = ByteBuffer.allocate(size);
     if (position < 0) {
       if (ReadWriteIOUtils.readAsPossible(tsFileInput, buffer) != size) {
@@ -1057,20 +1068,6 @@ public class TsFileSequenceReader implements AutoCloseable {
       }
     }
     buffer.flip();
-    // try to remove cache
-    //    try {
-    //      Runtime rt = Runtime.getRuntime();
-    //      Process proc = rt.exec("vmtouch /opt/iotdb-server-0.13.0-SNAPSHOT/data", null, null);
-    //      InputStream stderr = proc.getInputStream();
-    //      InputStreamReader isr = new InputStreamReader(stderr, "GBK");
-    //      BufferedReader br = new BufferedReader(isr);
-    //      String line = "";
-    //      while ((line = br.readLine()) != null) {
-    //        logger.info(line);
-    //      }
-    //    } catch (Exception e) {
-    //      e.printStackTrace();
-    //    }
     return buffer;
   }
 

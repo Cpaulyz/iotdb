@@ -37,7 +37,7 @@ public class DiskChunkLoader implements IChunkLoader {
   }
 
   @Override
-  public Chunk loadChunk(ChunkMetadata chunkMetaData) throws IOException {
+  public Chunk loadChunk(ChunkMetadata chunkMetaData) throws IOException { // TODO Ichunk..
     return ChunkCache.getInstance().get(chunkMetaData, debug);
   }
 
