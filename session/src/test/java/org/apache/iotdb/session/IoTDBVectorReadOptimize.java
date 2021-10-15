@@ -30,18 +30,17 @@ import org.junit.*;
 
 import java.io.File;
 import java.io.PrintWriter;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /** use session interface to IT for vector timeseries insert and select Black-box Testing */
-public class IoTDBSessionVectorIT {
+public class IoTDBVectorReadOptimize {
   private static final String ROOT_SG1_D1_VECTOR1 = "root.sg_2.d1.vector";
 
   private Session session;
 
-  private static int rowNum = 100000;
-  private static int colNum = 500;
+  private static int rowNum = 1000000;
+  private static int colNum = 1000;
   private static int startTest = 1;
 
   @Before
@@ -50,7 +49,7 @@ public class IoTDBSessionVectorIT {
     //    EnvironmentUtils.closeStatMonitor();
     //    EnvironmentUtils.envSetUp();
     //    session = new Session("127.0.0.1", 6667, "root", "root");
-    session = new Session("192.168.41.132", 6667, "root", "root");
+    session = new Session("192.168.130.37", 6667, "root", "root");
     session.open();
   }
 
@@ -59,6 +58,22 @@ public class IoTDBSessionVectorIT {
     //        session.deleteStorageGroup("root.sg_1");
     session.close();
     //            EnvironmentUtils.cleanEnv();
+  }
+
+  @Test
+  public void testResult() throws StatementExecutionException, IoTDBConnectionException {
+    SessionDataSet dataSet = session.executeQueryStatement("select s0001 from root.sg_2.d1.vector");
+    HashSet<Long> set = new HashSet<>();
+    System.out.println("multiple points:");
+    while (dataSet.hasNext()) {
+      long v = dataSet.next().getFields().get(0).getLongV();
+      if (set.contains(v)) {
+        System.out.println(v);
+      } else {
+        set.add(v);
+      }
+    }
+    dataSet.closeOperationHandle();
   }
 
   @Test

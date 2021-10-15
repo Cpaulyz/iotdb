@@ -51,7 +51,7 @@ public class ChunkCache {
   private static final long MEMORY_THRESHOLD_IN_CHUNK_CACHE =
       config.getAllocateMemoryForChunkCache();
   private static final boolean CACHE_ENABLE = config.isMetaDataCacheEnable();
-  public static boolean CACHE_VECTOR_ENABLE = true;
+  public static boolean CACHE_VECTOR_ENABLE = false;
 
   private final LoadingCache<ChunkMetadata, Chunk> lruCache;
 
@@ -103,7 +103,7 @@ public class ChunkCache {
   public Chunk getTimeChunk(
       ChunkMetadata timeChunkMetadata, List<ChunkMetadata> valueChunkMetadatas) throws IOException {
     if (CACHE_ENABLE && CACHE_VECTOR_ENABLE) {
-      CACHE_VECTOR_ENABLE = false;
+      //      CACHE_VECTOR_ENABLE = false;
       Chunk chunk = lruCache.getIfPresent(timeChunkMetadata);
       if (chunk == null) {
         // explicitly put cache
@@ -122,7 +122,7 @@ public class ChunkCache {
           timeChunkMetadata.getStatistics());
 
     } else {
-      CACHE_VECTOR_ENABLE = true;
+      //      CACHE_VECTOR_ENABLE = true;
       return get(timeChunkMetadata, false);
     }
   }

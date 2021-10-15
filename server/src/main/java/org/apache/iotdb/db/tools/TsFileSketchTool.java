@@ -403,7 +403,7 @@ public class TsFileSketchTool {
 
   private static Pair<String, String> checkArgs(String[] args) {
     String filename =
-        "D:\\JavaSpace\\iotdb\\iotdb\\data\\data\\sequence\\root.sg_2\\0\\0\\1633436045261-1-0-0.tsfile";
+        "D:\\JavaSpace\\iotdb\\iotdb\\data\\data\\sequence\\root.sg_2\\0\\0\\1634220396191-1-0-0.tsfile";
     String outFile = "TsFile_sketch_view.txt";
     if (args.length == 1) {
       filename = args[0];
