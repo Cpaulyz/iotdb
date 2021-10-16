@@ -19,7 +19,6 @@
 package org.apache.iotdb.db.service;
 
 import org.apache.iotdb.db.concurrent.IoTDBDefaultThreadExceptionHandler;
-import org.apache.iotdb.db.conf.IoTDBConfig;
 import org.apache.iotdb.db.conf.IoTDBConfigCheck;
 import org.apache.iotdb.db.conf.IoTDBConstant;
 import org.apache.iotdb.db.conf.IoTDBDescriptor;

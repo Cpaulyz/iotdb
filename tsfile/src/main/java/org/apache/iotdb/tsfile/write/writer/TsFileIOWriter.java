@@ -401,6 +401,7 @@ public class TsFileIOWriter {
         for (Map.Entry<Path, List<IChunkMetadata>> entry : vectorMap.entrySet()) {
           flushOneChunkMetadata(entry.getKey(), entry.getValue(), vectorToPathsMap);
         }
+        break;
       }
     }
   }
