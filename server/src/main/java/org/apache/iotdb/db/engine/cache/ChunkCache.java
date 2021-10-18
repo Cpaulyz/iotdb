@@ -136,7 +136,7 @@ public class ChunkCache {
       return new Chunk(
           chunk.getHeader(),
           chunk.getData().duplicate(),
-          chunk.getDeleteIntervalList(),
+          chunkMetaData.getDeleteIntervalList(),
           chunkMetaData.getStatistics());
     }
 
@@ -149,7 +149,7 @@ public class ChunkCache {
     return new Chunk(
         chunk.getHeader(),
         chunk.getData().duplicate(),
-        chunk.getDeleteIntervalList(),
+        chunkMetaData.getDeleteIntervalList(),
         chunkMetaData.getStatistics());
   }
 
