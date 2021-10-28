@@ -645,18 +645,25 @@ public class TSServiceImpl implements TSIService.Iface {
       PhysicalPlan physicalPlan =
           processor.parseSQLToPhysicalPlan(statement, sessionManager.getZoneId(req.sessionId));
 
-      return physicalPlan.isQuery()
-          ? internalExecuteQueryStatement(
-              statement,
-              req.statementId,
-              physicalPlan,
-              req.fetchSize,
-              req.timeout,
-              req.getSessionId(),
-              req.isEnableRedirectQuery(),
-              req.isJdbcQuery())
-          : RpcUtils.getTSExecuteStatementResp(
-              TSStatusCode.EXECUTE_STATEMENT_ERROR, "Statement is not a query statement.");
+      long startTime = System.currentTimeMillis();
+      TSExecuteStatementResp res =
+          physicalPlan.isQuery()
+              ? internalExecuteQueryStatement(
+                  statement,
+                  req.statementId,
+                  physicalPlan,
+                  req.fetchSize,
+                  req.timeout,
+                  req.getSessionId(),
+                  req.isEnableRedirectQuery(),
+                  req.isJdbcQuery())
+              : RpcUtils.getTSExecuteStatementResp(
+                  TSStatusCode.EXECUTE_STATEMENT_ERROR, "Statement is not a query statement.");
+
+      long endTime = System.currentTimeMillis();
+      LOGGER.info(
+          "optimize test [" + physicalPlan.getPaths().size() + "," + (endTime - startTime) + "]");
+      return res;
     } catch (InterruptedException e) {
       LOGGER.error(INFO_INTERRUPT_ERROR, req, e);
       Thread.currentThread().interrupt();

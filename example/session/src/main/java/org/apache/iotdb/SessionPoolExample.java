@@ -39,7 +39,7 @@ public class SessionPoolExample {
       throws StatementExecutionException, IoTDBConnectionException, InterruptedException {
     pool =
         new SessionPool.Builder()
-            .host("127.0.0.1")
+            .host("192.168.130.37")
             .port(6667)
             .user("root")
             .password("root")
@@ -47,10 +47,10 @@ public class SessionPoolExample {
             .build();
     service = Executors.newFixedThreadPool(10);
 
-    insertRecord();
+//    insertRecord();
     queryByRowRecord();
-    Thread.sleep(1000);
-    queryByIterator();
+//    Thread.sleep(1000);
+//    queryByIterator();
     pool.close();
     service.shutdown();
   }
@@ -82,7 +82,8 @@ public class SessionPoolExample {
           () -> {
             SessionDataSetWrapper wrapper = null;
             try {
-              wrapper = pool.executeQueryStatement("select * from root.sg1.d1");
+              wrapper = pool.executeQueryStatement("select s0001 from root.sg_2.d1.vector");
+//              wrapper = pool.executeQueryStatement("select * from root.sg1.d1");
               System.out.println(wrapper.getColumnNames());
               System.out.println(wrapper.getColumnTypes());
               while (wrapper.hasNext()) {

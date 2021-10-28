@@ -1041,7 +1041,10 @@ public class TsFileSequenceReader implements AutoCloseable {
   protected ByteBuffer readData(long position, int size) throws IOException {
     //    try {
     //      Runtime rt = Runtime.getRuntime();
-    //      Process proc = rt.exec("vmtouch /opt/iotdb-server-0.13.0-SNAPSHOT/data", null, null);
+    //      Process proc =
+    //          rt.exec(
+    //              "vmtouch -e /home/tianyuan/vector_read_optimize/iotdb-normal/data/data", null,
+    // null);
     //      InputStream stderr = proc.getInputStream();
     //      InputStreamReader isr = new InputStreamReader(stderr, "GBK");
     //      BufferedReader br = new BufferedReader(isr);

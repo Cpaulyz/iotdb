@@ -51,7 +51,7 @@ public class ChunkCache {
   private static final long MEMORY_THRESHOLD_IN_CHUNK_CACHE =
       config.getAllocateMemoryForChunkCache();
   private static final boolean CACHE_ENABLE = config.isMetaDataCacheEnable();
-  public static boolean CACHE_VECTOR_ENABLE = false;
+  public static boolean CACHE_VECTOR_ENABLE = true;
 
   private final LoadingCache<ChunkMetadata, Chunk> lruCache;
 
