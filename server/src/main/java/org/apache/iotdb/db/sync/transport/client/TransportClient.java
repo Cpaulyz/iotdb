@@ -137,7 +137,7 @@ public class TransportClient implements ITransportClient {
               InetAddress.getLocalHost().getHostAddress(),
               pipe.getName(),
               pipe.getCreateTime(),
-              config.getIoTDBMajorVersion());
+              "0.14.0-SNAPSHOT");
       TransportStatus status = serviceClient.handshake(identityInfo);
       if (status.code != SUCCESS_CODE) {
         throw new SyncConnectionException(
@@ -154,6 +154,17 @@ public class TransportClient implements ITransportClient {
   }
 
   public boolean senderTransport(PipeData pipeData) throws SyncConnectionException {
+    logger.info(
+        "Finish transport pipeData with serialize number {} and type {},value={},【{}】",
+        pipeData.getSerialNumber(),
+        pipeData.getType(),
+        pipeData,
+        System.currentTimeMillis());
+    try {
+      Thread.sleep(100);
+    } catch (InterruptedException e) {
+      e.printStackTrace();
+    }
     if (pipeData instanceof TsFilePipeData) {
       try {
         for (File file : ((TsFilePipeData) pipeData).getTsFiles(true)) {
@@ -181,7 +192,7 @@ public class TransportClient implements ITransportClient {
 
       try {
         transportPipeData(pipeData);
-        logger.info(String.format("Finish pipeData %s transport.", pipeData));
+        //        logger.info(String.format("Finish pipeData %s transport.", pipeData));
         break;
       } catch (SyncConnectionException e) {
         // handshake and retry
@@ -446,7 +457,7 @@ public class TransportClient implements ITransportClient {
           .receiveMsg(
               heartbeat(
                   new SyncRequest(
-                      RequestType.CREATE,
+                      RequestType.START,
                       pipe.getName(),
                       InetAddress.getLocalHost().getHostAddress(),
                       pipe.getCreateTime())));

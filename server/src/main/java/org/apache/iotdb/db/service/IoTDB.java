@@ -51,6 +51,7 @@ import org.apache.iotdb.db.service.metrics.MetricsService;
 import org.apache.iotdb.db.sync.receiver.ReceiverService;
 import org.apache.iotdb.db.sync.sender.service.SenderService;
 import org.apache.iotdb.db.wal.WALManager;
+import org.apache.iotdb.tsfile.common.conf.TSFileDescriptor;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -76,6 +77,10 @@ public class IoTDB implements IoTDBMBean {
     try {
       IoTDBConfigCheck.getInstance().checkConfig();
       IoTDBRestServiceCheck.getInstance().checkConfig();
+      TSFileDescriptor.getInstance().getConfig().setGroupSizeInByte(2000);
+      IoTDBDescriptor.getInstance().getConfig().setEnableUnseqSpaceCompaction(false);
+      IoTDBDescriptor.getInstance().getConfig().setEnableSeqSpaceCompaction(false);
+      IoTDBDescriptor.getInstance().getConfig().setEnableCrossSpaceCompaction(false);
     } catch (ConfigurationException | IOException e) {
       logger.error("meet error when doing start checking", e);
       System.exit(1);

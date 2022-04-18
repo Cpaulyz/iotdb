@@ -125,13 +125,14 @@ public class Collector {
         PipeData pipeData = null;
         try {
           pipeData = pipeDataQueue.take();
-          logger.info(
-              "Start load pipeData with serialize number {} and type {},value={}",
-              pipeData.getSerialNumber(),
-              pipeData.getType(),
-              pipeData);
           pipeData.createLoader().load();
           pipeDataQueue.commit();
+          logger.info(
+              "Commit load pipeData with serialize number {} and type {},value={},【{}】",
+              pipeData.getSerialNumber(),
+              pipeData.getType(),
+              pipeData,
+              System.currentTimeMillis());
         } catch (InterruptedException e) {
           logger.warn("Be interrupted when waiting for pipe data, because {}", e.getMessage());
           Thread.currentThread().interrupt();
