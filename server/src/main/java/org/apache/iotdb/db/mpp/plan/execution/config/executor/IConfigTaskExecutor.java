@@ -36,6 +36,7 @@ import org.apache.iotdb.db.mpp.plan.statement.metadata.template.SetSchemaTemplat
 import org.apache.iotdb.db.mpp.plan.statement.metadata.template.ShowNodesInSchemaTemplateStatement;
 import org.apache.iotdb.db.mpp.plan.statement.metadata.template.ShowPathSetTemplateStatement;
 import org.apache.iotdb.db.mpp.plan.statement.metadata.template.ShowSchemaTemplateStatement;
+import org.apache.iotdb.db.mpp.plan.statement.sync.OperatePipeServerStatement;
 
 import com.google.common.util.concurrent.SettableFuture;
 
@@ -92,4 +93,7 @@ public interface IConfigTaskExecutor {
 
   SettableFuture<ConfigTaskResult> showPathSetTemplate(
       ShowPathSetTemplateStatement showPathSetTemplateStatement);
+
+  SettableFuture<ConfigTaskResult> operatePipeServer(
+      OperatePipeServerStatement operatePipeServerStatement);
 }

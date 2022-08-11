@@ -63,6 +63,7 @@ import org.apache.iotdb.db.mpp.plan.statement.metadata.template.ShowNodesInSchem
 import org.apache.iotdb.db.mpp.plan.statement.metadata.template.ShowPathSetTemplateStatement;
 import org.apache.iotdb.db.mpp.plan.statement.metadata.template.ShowPathsUsingTemplateStatement;
 import org.apache.iotdb.db.mpp.plan.statement.metadata.template.ShowSchemaTemplateStatement;
+import org.apache.iotdb.db.mpp.plan.statement.sync.OperatePipeServerStatement;
 import org.apache.iotdb.db.mpp.plan.statement.sys.AuthorStatement;
 import org.apache.iotdb.db.mpp.plan.statement.sys.ClearCacheStatement;
 import org.apache.iotdb.db.mpp.plan.statement.sys.ExplainStatement;
@@ -315,5 +316,12 @@ public abstract class StatementVisitor<R, C> {
   public R visitShowPathsUsingTemplate(
       ShowPathsUsingTemplateStatement showPathsUsingTemplateStatement, C context) {
     return visitStatement(showPathsUsingTemplateStatement, context);
+  }
+
+  // sync
+
+  public R visitOperatePipeServer(
+      OperatePipeServerStatement operatePipeServerStatement, C context) {
+    return visitStatement(operatePipeServerStatement, context);
   }
 }

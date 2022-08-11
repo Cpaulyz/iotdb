@@ -38,6 +38,7 @@ import org.apache.iotdb.db.mpp.plan.execution.config.metadata.template.SetSchema
 import org.apache.iotdb.db.mpp.plan.execution.config.metadata.template.ShowNodesInSchemaTemplateTask;
 import org.apache.iotdb.db.mpp.plan.execution.config.metadata.template.ShowPathSetTemplateTask;
 import org.apache.iotdb.db.mpp.plan.execution.config.metadata.template.ShowSchemaTemplateTask;
+import org.apache.iotdb.db.mpp.plan.execution.config.sync.OperatePipeServerTask;
 import org.apache.iotdb.db.mpp.plan.execution.config.sys.AuthorizerTask;
 import org.apache.iotdb.db.mpp.plan.execution.config.sys.ClearCacheTask;
 import org.apache.iotdb.db.mpp.plan.execution.config.sys.FlushTask;
@@ -64,6 +65,7 @@ import org.apache.iotdb.db.mpp.plan.statement.metadata.template.SetSchemaTemplat
 import org.apache.iotdb.db.mpp.plan.statement.metadata.template.ShowNodesInSchemaTemplateStatement;
 import org.apache.iotdb.db.mpp.plan.statement.metadata.template.ShowPathSetTemplateStatement;
 import org.apache.iotdb.db.mpp.plan.statement.metadata.template.ShowSchemaTemplateStatement;
+import org.apache.iotdb.db.mpp.plan.statement.sync.OperatePipeServerStatement;
 import org.apache.iotdb.db.mpp.plan.statement.sys.AuthorStatement;
 import org.apache.iotdb.db.mpp.plan.statement.sys.ClearCacheStatement;
 import org.apache.iotdb.db.mpp.plan.statement.sys.FlushStatement;
@@ -211,6 +213,12 @@ public class ConfigTaskVisitor
   public IConfigTask visitShowConfigNodes(
       ShowConfigNodesStatement showConfigNodesStatement, TaskContext context) {
     return new ShowConfigNodesTask(showConfigNodesStatement);
+  }
+
+  @Override
+  public IConfigTask visitOperatePipeServer(
+      OperatePipeServerStatement operatePipeServerStatement, TaskContext context) {
+    return new OperatePipeServerTask(operatePipeServerStatement);
   }
 
   public static class TaskContext {}

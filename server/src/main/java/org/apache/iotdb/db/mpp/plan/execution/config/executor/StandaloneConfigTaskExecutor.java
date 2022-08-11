@@ -48,6 +48,8 @@ import org.apache.iotdb.db.mpp.plan.statement.metadata.template.SetSchemaTemplat
 import org.apache.iotdb.db.mpp.plan.statement.metadata.template.ShowNodesInSchemaTemplateStatement;
 import org.apache.iotdb.db.mpp.plan.statement.metadata.template.ShowPathSetTemplateStatement;
 import org.apache.iotdb.db.mpp.plan.statement.metadata.template.ShowSchemaTemplateStatement;
+import org.apache.iotdb.db.mpp.plan.statement.sync.OperatePipeServerStatement;
+import org.apache.iotdb.db.sync.receiver.ReceiverService;
 import org.apache.iotdb.rpc.RpcUtils;
 import org.apache.iotdb.rpc.StatementExecutionException;
 import org.apache.iotdb.rpc.TSStatusCode;
@@ -400,6 +402,27 @@ public class StandaloneConfigTaskExecutor implements IConfigTaskExecutor {
             RpcUtils.getStatus(
                 TSStatusCode.EXECUTE_STATEMENT_ERROR,
                 "Executing show path set template is not supported")));
+    return future;
+  }
+
+  @Override
+  public SettableFuture<ConfigTaskResult> operatePipeServer(
+      OperatePipeServerStatement operatePipeServerStatement) {
+    SettableFuture<ConfigTaskResult> future = SettableFuture.create();
+    ReceiverService receiverService = ReceiverService.getInstance();
+    //    try {
+    //      TSStatus tsStatus;
+    //      if(operatePipeServerStatement.isPipeServerEnable()){
+    //        tsStatus = receiverService.startPipeServer(false);
+    //      }else{
+    //        tsStatus = receiverService.stopPipeServer();
+    //      }
+    //    }
+    //    if (tsStatus.getCode() == TSStatusCode.SUCCESS_STATUS.getStatusCode()) {
+    //      future.set(new ConfigTaskResult(TSStatusCode.SUCCESS_STATUS));
+    //    } else {
+    //      future.setException(new StatementExecutionException(tsStatus));
+    //    }
     return future;
   }
 }

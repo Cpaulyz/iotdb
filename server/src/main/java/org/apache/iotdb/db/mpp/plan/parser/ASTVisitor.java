@@ -114,6 +114,7 @@ import org.apache.iotdb.db.mpp.plan.statement.metadata.template.ShowNodesInSchem
 import org.apache.iotdb.db.mpp.plan.statement.metadata.template.ShowPathSetTemplateStatement;
 import org.apache.iotdb.db.mpp.plan.statement.metadata.template.ShowPathsUsingTemplateStatement;
 import org.apache.iotdb.db.mpp.plan.statement.metadata.template.ShowSchemaTemplateStatement;
+import org.apache.iotdb.db.mpp.plan.statement.sync.OperatePipeServerStatement;
 import org.apache.iotdb.db.mpp.plan.statement.sys.AuthorStatement;
 import org.apache.iotdb.db.mpp.plan.statement.sys.ClearCacheStatement;
 import org.apache.iotdb.db.mpp.plan.statement.sys.ExplainStatement;
@@ -2579,4 +2580,16 @@ public class ASTVisitor extends IoTDBSqlParserBaseVisitor<Statement> {
   }
 
   // schema template
+
+  // Sync modules statement ========================================================
+
+  @Override
+  public Statement visitStartPipeServer(IoTDBSqlParser.StartPipeServerContext ctx) {
+    return new OperatePipeServerStatement(true);
+  }
+
+  @Override
+  public Statement visitStopPipeServer(IoTDBSqlParser.StopPipeServerContext ctx) {
+    return new OperatePipeServerStatement(false);
+  }
 }
