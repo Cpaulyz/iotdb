@@ -156,7 +156,9 @@ public class DataNodeClientPoolFactory {
                   .setSelectorNumOfAsyncClientManager(conf.getSelectorNumOfClientManager())
                   .build()),
           new ClientPoolProperty.Builder<ConfigNodeClient>()
-              .setMaxIdleClientForEachNode(conf.getCoreConnectionForInternalService())
+              //
+              // .setMaxIdleClientForEachNode(conf.getCoreConnectionForInternalService())
+              .setMaxIdleClientForEachNode(1)
               .setMaxTotalClientForEachNode(conf.getMaxConnectionForInternalService())
               .build()
               .getConfig());
