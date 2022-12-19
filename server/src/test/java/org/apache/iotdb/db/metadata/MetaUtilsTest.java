@@ -74,9 +74,7 @@ public class MetaUtilsTest {
         });
   }
 
-  /**
-   * TODO: remove this after delete {@linkplain MetaUtils#groupAlignedPaths}
-   */
+  /** TODO: remove this after delete {@linkplain MetaUtils#groupAlignedPaths} */
   @Test
   public void testGroupAlignedPath() throws MetadataException {
     List<PartialPath> pathList = new ArrayList<>();
