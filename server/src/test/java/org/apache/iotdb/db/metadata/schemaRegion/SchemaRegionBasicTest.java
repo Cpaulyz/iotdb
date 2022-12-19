@@ -33,6 +33,7 @@ import org.apache.iotdb.db.exception.metadata.PathAlreadyExistException;
 import org.apache.iotdb.db.localconfignode.LocalConfigNode;
 import org.apache.iotdb.db.metadata.MetadataConstant;
 import org.apache.iotdb.db.metadata.plan.schemaregion.impl.ActivateTemplateInClusterPlanImpl;
+import org.apache.iotdb.db.metadata.plan.schemaregion.impl.CreateAlignedTimeSeriesPlanImpl;
 import org.apache.iotdb.db.metadata.plan.schemaregion.impl.CreateTimeSeriesPlanImpl;
 import org.apache.iotdb.db.metadata.plan.schemaregion.impl.DeactivateTemplatePlanImpl;
 import org.apache.iotdb.db.metadata.plan.schemaregion.impl.PreDeactivateTemplatePlanImpl;
@@ -577,5 +578,134 @@ public abstract class SchemaRegionBasicTest {
     allPatternTree.appendPathPattern(new PartialPath("root.**"));
     allPatternTree.constructTree();
     Assert.assertEquals(1, schemaRegion.countPathsUsingTemplate(templateId, allPatternTree));
+  }
+
+  @Test
+  // todo: remove this
+  public void testGetMeasurementPaths() throws Exception {
+    PartialPath storageGroup = new PartialPath("root.sg");
+    SchemaRegionId schemaRegionId = new SchemaRegionId(0);
+    SchemaEngine.getInstance().createSchemaRegion(storageGroup, schemaRegionId);
+    ISchemaRegion schemaRegion = SchemaEngine.getInstance().getSchemaRegion(schemaRegionId);
+    schemaRegion.createTimeseries(
+        new CreateTimeSeriesPlanImpl(
+            new PartialPath("root.sg.wf01.wt01.status"),
+            TSDataType.BOOLEAN,
+            TSEncoding.PLAIN,
+            CompressionType.SNAPPY,
+            null,
+            null,
+            null,
+            null),
+        -1);
+    schemaRegion.createTimeseries(
+        new CreateTimeSeriesPlanImpl(
+            new PartialPath("root.sg.wf01.wt01.v1.s1"),
+            TSDataType.BOOLEAN,
+            TSEncoding.PLAIN,
+            CompressionType.SNAPPY,
+            null,
+            null,
+            null,
+            null),
+        -1);
+    schemaRegion.createTimeseries(
+        new CreateTimeSeriesPlanImpl(
+            new PartialPath("root.sg.wf01.wt01.temperature"),
+            TSDataType.FLOAT,
+            TSEncoding.RLE,
+            CompressionType.GZIP,
+            null,
+            new HashMap<String, String>() {
+              {
+                put("tag1", "t1");
+                put("tag2", "t2");
+              }
+            },
+            new HashMap<String, String>() {
+              {
+                put("attr1", "a1");
+                put("attr2", "a2");
+              }
+            },
+            "temp"),
+        -1);
+    schemaRegion.getMeasurementPaths(new PartialPath("root.sg"), false, false);
+    List<MeasurementPath> emptyMeasurementPaths =
+        schemaRegion.getMeasurementPaths(new PartialPath("root.sg"), false, false);
+    Assert.assertTrue(emptyMeasurementPaths.isEmpty());
+    List<MeasurementPath> measurementPathsWithTags =
+        schemaRegion.getMeasurementPaths(new PartialPath("root.sg"), true, true);
+    Assert.assertEquals(3, measurementPathsWithTags.size());
+    for (MeasurementPath measurementPath : measurementPathsWithTags) {
+      if (measurementPath.getFullPath().equals("root.sg.wf01.wt01.temperature")) {
+        Assert.assertEquals("", measurementPath.getMeasurementAlias());
+        Assert.assertEquals(
+            new HashMap<String, String>() {
+              {
+                put("tag1", "t1");
+                put("tag2", "t2");
+              }
+            },
+            measurementPath.getTagMap());
+      }
+    }
+    Pair<List<MeasurementPath>, Integer> measurementPathsWithAlias =
+        schemaRegion.getMeasurementPathsWithAlias(
+            new PartialPath("root.**.temp"), 0, 0, true, true);
+    Assert.assertEquals(1, measurementPathsWithAlias.left.size());
+    for (MeasurementPath measurementPath : measurementPathsWithAlias.left) {
+      if (measurementPath.getFullPath().equals("root.sg.wf01.wt01.temperature")) {
+        Assert.assertEquals("temp", measurementPath.getMeasurementAlias());
+        Assert.assertEquals(
+            new HashMap<String, String>() {
+              {
+                put("tag1", "t1");
+                put("tag2", "t2");
+              }
+            },
+            measurementPath.getTagMap());
+      }
+    }
+  }
+
+  @Test
+  public void testGetMatchedDevices() throws Exception {
+    PartialPath storageGroup = new PartialPath("root.sg");
+    SchemaRegionId schemaRegionId = new SchemaRegionId(0);
+    SchemaEngine.getInstance().createSchemaRegion(storageGroup, schemaRegionId);
+    ISchemaRegion schemaRegion = SchemaEngine.getInstance().getSchemaRegion(schemaRegionId);
+    schemaRegion.createTimeseries(
+        new CreateTimeSeriesPlanImpl(
+            new PartialPath("root.sg.d1.s1"),
+            TSDataType.BOOLEAN,
+            TSEncoding.PLAIN,
+            CompressionType.SNAPPY,
+            null,
+            null,
+            null,
+            null),
+        -1);
+    schemaRegion.createTimeseries(
+        new CreateTimeSeriesPlanImpl(
+            new PartialPath("root.sg.d2.s1"),
+            TSDataType.BOOLEAN,
+            TSEncoding.PLAIN,
+            CompressionType.SNAPPY,
+            null,
+            null,
+            null,
+            null),
+        -1);
+    schemaRegion.createAlignedTimeSeries(
+        new CreateAlignedTimeSeriesPlanImpl(
+            new PartialPath("root.sg.aligned_deviced1"),
+            Arrays.asList("s1", "s2"),
+            Arrays.asList(TSDataType.INT64, TSDataType.INT32),
+            Arrays.asList(TSEncoding.PLAIN, TSEncoding.PLAIN),
+            Arrays.asList(CompressionType.SNAPPY, CompressionType.SNAPPY),
+            null,
+            null,
+            null));
   }
 }
