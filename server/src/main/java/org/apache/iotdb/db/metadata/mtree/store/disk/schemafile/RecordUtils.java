@@ -20,11 +20,9 @@ package org.apache.iotdb.db.metadata.mtree.store.disk.schemafile;
 
 import org.apache.iotdb.commons.exception.MetadataException;
 import org.apache.iotdb.commons.utils.TestOnly;
-import org.apache.iotdb.db.metadata.mnode.EntityMNode;
 import org.apache.iotdb.db.metadata.mnode.IMNode;
 import org.apache.iotdb.db.metadata.mnode.IMeasurementMNode;
-import org.apache.iotdb.db.metadata.mnode.InternalMNode;
-import org.apache.iotdb.db.metadata.mnode.MeasurementMNode;
+import org.apache.iotdb.db.metadata.mnode.factory.MNodeFactory;
 import org.apache.iotdb.db.metadata.mtree.store.disk.ICachedMNodeContainer;
 import org.apache.iotdb.tsfile.file.metadata.enums.CompressionType;
 import org.apache.iotdb.tsfile.file.metadata.enums.TSDataType;
@@ -188,9 +186,9 @@ public class RecordUtils {
       boolean isAligned = isAligned(bitFlag);
 
       if (nodeType == 0) {
-        resNode = new InternalMNode(null, nodeName);
+        resNode = MNodeFactory.getInstance().createInternalMNode(null, nodeName);
       } else {
-        resNode = new EntityMNode(null, nodeName);
+        resNode = MNodeFactory.getInstance().createEntityMNode(null, nodeName);
         resNode.getAsEntityMNode().setAligned(isAligned);
       }
 
@@ -356,7 +354,7 @@ public class RecordUtils {
             CompressionType.deserialize(compressor),
             props);
 
-    IMNode res = MeasurementMNode.getMeasurementMNode(null, nodeName, schema, alias);
+    IMNode res = MNodeFactory.getInstance().createMeasurementMNode(null, nodeName, schema, alias);
     res.getAsMeasurementMNode().setOffset(tagIndex);
 
     if (preDel > 0) {

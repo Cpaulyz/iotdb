@@ -39,7 +39,7 @@ import org.apache.iotdb.db.metadata.mnode.IMNode;
 import org.apache.iotdb.db.metadata.mnode.IMeasurementMNode;
 import org.apache.iotdb.db.metadata.mnode.IStorageGroupMNode;
 import org.apache.iotdb.db.metadata.mnode.InternalMNode;
-import org.apache.iotdb.db.metadata.mnode.MeasurementMNode;
+import org.apache.iotdb.db.metadata.mnode.factory.MNodeFactory;
 import org.apache.iotdb.db.metadata.mnode.iterator.IMNodeIterator;
 import org.apache.iotdb.db.metadata.mtree.store.MemMTreeStore;
 import org.apache.iotdb.db.metadata.mtree.traverser.Traverser;
@@ -246,11 +246,12 @@ public class MTreeBelowSGMemoryImpl implements IMTreeBelowSG {
       }
 
       IMeasurementMNode measurementMNode =
-          MeasurementMNode.getMeasurementMNode(
-              entityMNode,
-              leafName,
-              new MeasurementSchema(leafName, dataType, encoding, compressor, props),
-              alias);
+          MNodeFactory.getInstance()
+              .createMeasurementMNode(
+                  entityMNode,
+                  leafName,
+                  new MeasurementSchema(leafName, dataType, encoding, compressor, props),
+                  alias);
       store.addChild(entityMNode, leafName, measurementMNode);
       // link alias to LeafMNode
       if (alias != null) {
@@ -329,12 +330,16 @@ public class MTreeBelowSGMemoryImpl implements IMTreeBelowSG {
 
       for (int i = 0; i < measurements.size(); i++) {
         IMeasurementMNode measurementMNode =
-            MeasurementMNode.getMeasurementMNode(
-                entityMNode,
-                measurements.get(i),
-                new MeasurementSchema(
-                    measurements.get(i), dataTypes.get(i), encodings.get(i), compressors.get(i)),
-                aliasList == null ? null : aliasList.get(i));
+            MNodeFactory.getInstance()
+                .createMeasurementMNode(
+                    entityMNode,
+                    measurements.get(i),
+                    new MeasurementSchema(
+                        measurements.get(i),
+                        dataTypes.get(i),
+                        encodings.get(i),
+                        compressors.get(i)),
+                    aliasList == null ? null : aliasList.get(i));
         store.addChild(entityMNode, measurements.get(i), measurementMNode);
         if (aliasList != null && aliasList.get(i) != null) {
           entityMNode.addAlias(aliasList.get(i), measurementMNode);

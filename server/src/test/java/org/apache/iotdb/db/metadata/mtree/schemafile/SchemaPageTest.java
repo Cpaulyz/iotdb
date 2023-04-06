@@ -22,7 +22,7 @@ import org.apache.iotdb.commons.exception.MetadataException;
 import org.apache.iotdb.db.metadata.mnode.EntityMNode;
 import org.apache.iotdb.db.metadata.mnode.IMNode;
 import org.apache.iotdb.db.metadata.mnode.IMeasurementMNode;
-import org.apache.iotdb.db.metadata.mnode.MeasurementMNode;
+import org.apache.iotdb.db.metadata.mnode.factory.MNodeFactory;
 import org.apache.iotdb.db.metadata.mtree.store.disk.schemafile.ISchemaPage;
 import org.apache.iotdb.db.metadata.mtree.store.disk.schemafile.RecordUtils;
 import org.apache.iotdb.db.metadata.mtree.store.disk.schemafile.SchemaFileConfig;
@@ -111,8 +111,9 @@ public class SchemaPageTest {
       String measurementId = "mid" + idx;
       IMeasurementSchema schema = new MeasurementSchema(measurementId, TSDataType.FLOAT);
       IMeasurementMNode mNode =
-          MeasurementMNode.getMeasurementMNode(
-              internalNode.getAsEntityMNode(), measurementId, schema, measurementId + "als");
+          MNodeFactory.getInstance()
+              .createMeasurementMNode(
+                  internalNode.getAsEntityMNode(), measurementId, schema, measurementId + "als");
       internalNode.addChild(mNode);
     }
     return internalNode;

@@ -18,6 +18,8 @@
  */
 package org.apache.iotdb.db.metadata.mnode;
 
+import org.apache.iotdb.db.metadata.mnode.factory.MNodeFactory;
+
 public class MNodeUtils {
 
   /**
@@ -39,7 +41,8 @@ public class MNodeUtils {
                 node.getParent(), node.getName(), node.getAsStorageGroupMNode().getDataTTL());
         node.moveDataToNewMNode(entityMNode);
       } else {
-        entityMNode = new EntityMNode(node.getParent(), node.getName());
+        entityMNode =
+            MNodeFactory.getInstance().createEntityMNode(node.getParent(), node.getName());
         if (node.getParent() != null) {
           node.getParent().replaceChild(node.getName(), entityMNode);
         } else {
@@ -66,7 +69,7 @@ public class MNodeUtils {
           new StorageGroupMNode(
               parent, entityMNode.getName(), entityMNode.getAsStorageGroupMNode().getDataTTL());
     } else {
-      node = new InternalMNode(parent, entityMNode.getName());
+      node = MNodeFactory.getInstance().createInternalMNode(parent, entityMNode.getName());
     }
 
     if (parent != null) {

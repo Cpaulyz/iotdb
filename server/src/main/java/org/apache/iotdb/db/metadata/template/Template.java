@@ -21,11 +21,10 @@ package org.apache.iotdb.db.metadata.template;
 import org.apache.iotdb.commons.exception.IllegalPathException;
 import org.apache.iotdb.commons.path.PartialPath;
 import org.apache.iotdb.commons.utils.PathUtils;
-import org.apache.iotdb.db.metadata.mnode.EntityMNode;
 import org.apache.iotdb.db.metadata.mnode.IEntityMNode;
 import org.apache.iotdb.db.metadata.mnode.IMNode;
 import org.apache.iotdb.db.metadata.mnode.IMeasurementMNode;
-import org.apache.iotdb.db.metadata.mnode.MeasurementMNode;
+import org.apache.iotdb.db.metadata.mnode.factory.MNodeFactory;
 import org.apache.iotdb.tsfile.common.constant.TsFileConstant;
 import org.apache.iotdb.tsfile.file.metadata.enums.CompressionType;
 import org.apache.iotdb.tsfile.file.metadata.enums.TSDataType;
@@ -224,14 +223,16 @@ public class Template implements Serializable {
         // find the parent and add nodes to template
         if ("".equals(prefix)) {
           leafNode =
-              MeasurementMNode.getMeasurementMNode(null, measurementNames.get(i), schemas[i], null);
+              MNodeFactory.getInstance()
+                  .createMeasurementMNode(null, measurementNames.get(i), schemas[i], null);
           directNodes.put(leafNode.getName(), leafNode);
         } else {
           commonPar = constructEntityPath(alignedPaths[0]);
           commonPar.getAsEntityMNode().setAligned(true);
           leafNode =
-              MeasurementMNode.getMeasurementMNode(
-                  commonPar.getAsEntityMNode(), measurementNames.get(i), schemas[i], null);
+              MNodeFactory.getInstance()
+                  .createMeasurementMNode(
+                      commonPar.getAsEntityMNode(), measurementNames.get(i), schemas[i], null);
           commonPar.addChild(leafNode);
         }
         schemaMap.put(getFullPathWithoutTemplateName(leafNode), schemas[i]);
@@ -250,8 +251,9 @@ public class Template implements Serializable {
 
     synchronized (this) {
       IMeasurementMNode leafNode =
-          MeasurementMNode.getMeasurementMNode(
-              (IEntityMNode) cur, pathNode[pathNode.length - 1], schema, null);
+          MNodeFactory.getInstance()
+              .createMeasurementMNode(
+                  (IEntityMNode) cur, pathNode[pathNode.length - 1], schema, null);
       if (cur == null) {
         directNodes.put(leafNode.getName(), leafNode);
       } else {
@@ -347,7 +349,7 @@ public class Template implements Serializable {
 
     IMNode cur = directNodes.get(pathNodes[0]);
     if (cur == null) {
-      cur = new EntityMNode(null, pathNodes[0]);
+      cur = MNodeFactory.getInstance().createEntityMNode(null, pathNodes[0]);
       directNodes.put(pathNodes[0], cur);
     }
 
@@ -357,7 +359,7 @@ public class Template implements Serializable {
 
     for (int i = 1; i <= pathNodes.length - 2; i++) {
       if (!cur.hasChild(pathNodes[i])) {
-        cur.addChild(pathNodes[i], new EntityMNode(cur, pathNodes[i]));
+        cur.addChild(pathNodes[i], MNodeFactory.getInstance().createEntityMNode(cur, pathNodes[i]));
       }
       cur = cur.getChild(pathNodes[i]);
 
@@ -496,7 +498,10 @@ public class Template implements Serializable {
         measurementSchema = VectorMeasurementSchema.partialDeserializeFrom(buffer);
       }
       schemaMap.put(schemaName, measurementSchema);
-      directNodes.put(schemaName, new MeasurementMNode(null, schemaName, measurementSchema, null));
+      directNodes.put(
+          schemaName,
+          MNodeFactory.getInstance()
+              .createMeasurementMNode(null, schemaName, measurementSchema, null));
     }
   }
 

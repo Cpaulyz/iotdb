@@ -21,7 +21,7 @@ package org.apache.iotdb.db.metadata.mtree.schemafile;
 import org.apache.iotdb.commons.exception.MetadataException;
 import org.apache.iotdb.db.metadata.mnode.IMNode;
 import org.apache.iotdb.db.metadata.mnode.InternalMNode;
-import org.apache.iotdb.db.metadata.mnode.MeasurementMNode;
+import org.apache.iotdb.db.metadata.mnode.factory.MNodeFactory;
 import org.apache.iotdb.db.metadata.mtree.store.disk.ICachedMNodeContainer;
 import org.apache.iotdb.db.metadata.mtree.store.disk.schemafile.RecordUtils;
 import org.apache.iotdb.db.utils.EnvironmentUtils;
@@ -74,7 +74,8 @@ public class RecordUtilTests {
     IMeasurementSchema schema =
         new MeasurementSchema(
             "amn", TSDataType.FLOAT, TSEncoding.BITMAP, CompressionType.GZIP, props);
-    IMNode amn = MeasurementMNode.getMeasurementMNode(null, "amn", schema, "anothername");
+    IMNode amn =
+        MNodeFactory.getInstance().createMeasurementMNode(null, "amn", schema, "anothername");
 
     ByteBuffer tBuf = RecordUtils.node2Buffer(amn);
     tBuf.clear();

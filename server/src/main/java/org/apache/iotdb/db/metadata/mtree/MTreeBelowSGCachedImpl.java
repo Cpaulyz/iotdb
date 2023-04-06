@@ -38,8 +38,7 @@ import org.apache.iotdb.db.metadata.mnode.IEntityMNode;
 import org.apache.iotdb.db.metadata.mnode.IMNode;
 import org.apache.iotdb.db.metadata.mnode.IMeasurementMNode;
 import org.apache.iotdb.db.metadata.mnode.IStorageGroupMNode;
-import org.apache.iotdb.db.metadata.mnode.InternalMNode;
-import org.apache.iotdb.db.metadata.mnode.MeasurementMNode;
+import org.apache.iotdb.db.metadata.mnode.factory.MNodeFactory;
 import org.apache.iotdb.db.metadata.mnode.iterator.IMNodeIterator;
 import org.apache.iotdb.db.metadata.mtree.store.CachedMTreeStore;
 import org.apache.iotdb.db.metadata.mtree.traverser.Traverser;
@@ -305,11 +304,12 @@ public class MTreeBelowSGCachedImpl implements IMTreeBelowSG {
           }
 
           IMeasurementMNode measurementMNode =
-              MeasurementMNode.getMeasurementMNode(
-                  entityMNode,
-                  leafName,
-                  new MeasurementSchema(leafName, dataType, encoding, compressor, props),
-                  alias);
+              MNodeFactory.getInstance()
+                  .createMeasurementMNode(
+                      entityMNode,
+                      leafName,
+                      new MeasurementSchema(leafName, dataType, encoding, compressor, props),
+                      alias);
           store.addChild(entityMNode, leafName, measurementMNode);
           // link alias to LeafMNode
           if (alias != null) {
@@ -390,15 +390,16 @@ public class MTreeBelowSGCachedImpl implements IMTreeBelowSG {
 
           for (int i = 0; i < measurements.size(); i++) {
             IMeasurementMNode measurementMNode =
-                MeasurementMNode.getMeasurementMNode(
-                    entityMNode,
-                    measurements.get(i),
-                    new MeasurementSchema(
+                MNodeFactory.getInstance()
+                    .createMeasurementMNode(
+                        entityMNode,
                         measurements.get(i),
-                        dataTypes.get(i),
-                        encodings.get(i),
-                        compressors.get(i)),
-                    aliasList == null ? null : aliasList.get(i));
+                        new MeasurementSchema(
+                            measurements.get(i),
+                            dataTypes.get(i),
+                            encodings.get(i),
+                            compressors.get(i)),
+                        aliasList == null ? null : aliasList.get(i));
             store.addChild(entityMNode, measurements.get(i), measurementMNode);
             if (aliasList != null && aliasList.get(i) != null) {
               entityMNode.addAlias(aliasList.get(i), measurementMNode);
@@ -493,7 +494,9 @@ public class MTreeBelowSGCachedImpl implements IMTreeBelowSG {
         childName = nodeNames[i];
         child = store.getChild(cur, childName);
         if (child == null) {
-          child = store.addChild(cur, childName, new InternalMNode(cur, childName));
+          child =
+              store.addChild(
+                  cur, childName, MNodeFactory.getInstance().createInternalMNode(cur, childName));
         }
         cur = child;
 
@@ -518,7 +521,10 @@ public class MTreeBelowSGCachedImpl implements IMTreeBelowSG {
     IMNode device = store.getChild(deviceParent, deviceName);
     if (device == null) {
       device =
-          store.addChild(deviceParent, deviceName, new InternalMNode(deviceParent, deviceName));
+          store.addChild(
+              deviceParent,
+              deviceName,
+              MNodeFactory.getInstance().createInternalMNode(deviceParent, deviceName));
     }
 
     if (device.isMeasurement()) {
@@ -709,7 +715,11 @@ public class MTreeBelowSGCachedImpl implements IMTreeBelowSG {
       for (int i = levelOfSG + 1; i < nodeNames.length; i++) {
         child = store.getChild(cur, nodeNames[i]);
         if (child == null) {
-          child = store.addChild(cur, nodeNames[i], new InternalMNode(cur, nodeNames[i]));
+          child =
+              store.addChild(
+                  cur,
+                  nodeNames[i],
+                  MNodeFactory.getInstance().createInternalMNode(cur, nodeNames[i]));
         }
         cur = child;
       }

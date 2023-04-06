@@ -25,8 +25,8 @@ import org.apache.iotdb.db.metadata.MetadataConstant;
 import org.apache.iotdb.db.metadata.mnode.IMNode;
 import org.apache.iotdb.db.metadata.mnode.IMeasurementMNode;
 import org.apache.iotdb.db.metadata.mnode.InternalMNode;
-import org.apache.iotdb.db.metadata.mnode.MeasurementMNode;
 import org.apache.iotdb.db.metadata.mnode.StorageGroupEntityMNode;
+import org.apache.iotdb.db.metadata.mnode.factory.MNodeFactory;
 import org.apache.iotdb.db.metadata.mtree.store.disk.schemafile.ISchemaFile;
 import org.apache.iotdb.db.metadata.mtree.store.disk.schemafile.SchemaFile;
 import org.apache.iotdb.db.metadata.schemaregion.SchemaEngineMode;
@@ -153,8 +153,9 @@ public class SchemaFileSketchTest {
       String measurementId = id + idx;
       IMeasurementSchema schema = new MeasurementSchema(measurementId, TSDataType.FLOAT);
       IMeasurementMNode mNode =
-          MeasurementMNode.getMeasurementMNode(
-              internalNode.getAsEntityMNode(), measurementId, schema, measurementId + "als");
+          MNodeFactory.getInstance()
+              .createMeasurementMNode(
+                  internalNode.getAsEntityMNode(), measurementId, schema, measurementId + "als");
       internalNode.addChild(mNode);
     }
 

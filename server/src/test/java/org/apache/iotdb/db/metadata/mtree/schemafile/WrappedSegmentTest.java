@@ -24,7 +24,7 @@ import org.apache.iotdb.db.metadata.mnode.EntityMNode;
 import org.apache.iotdb.db.metadata.mnode.IMNode;
 import org.apache.iotdb.db.metadata.mnode.IMeasurementMNode;
 import org.apache.iotdb.db.metadata.mnode.InternalMNode;
-import org.apache.iotdb.db.metadata.mnode.MeasurementMNode;
+import org.apache.iotdb.db.metadata.mnode.factory.MNodeFactory;
 import org.apache.iotdb.db.metadata.mtree.store.disk.schemafile.ISegment;
 import org.apache.iotdb.db.metadata.mtree.store.disk.schemafile.RecordUtils;
 import org.apache.iotdb.db.metadata.mtree.store.disk.schemafile.SchemaFileConfig;
@@ -108,8 +108,9 @@ public class WrappedSegmentTest {
       String measurementId = "mid" + idx;
       IMeasurementSchema schema = new MeasurementSchema(measurementId, TSDataType.FLOAT);
       IMeasurementMNode mNode =
-          MeasurementMNode.getMeasurementMNode(
-              internalNode.getAsEntityMNode(), measurementId, schema, measurementId + "als");
+          MNodeFactory.getInstance()
+              .createMeasurementMNode(
+                  internalNode.getAsEntityMNode(), measurementId, schema, measurementId + "als");
       internalNode.addChild(mNode);
     }
     return internalNode;
@@ -241,8 +242,9 @@ public class WrappedSegmentTest {
   private IMNode getMeasurementNode(IMNode par, String name, String alias) {
     IMeasurementSchema schema = new MeasurementSchema(name, TSDataType.FLOAT);
     IMeasurementMNode mNode =
-        MeasurementMNode.getMeasurementMNode(
-            par != null ? par.getAsEntityMNode() : null, name, schema, alias);
+        MNodeFactory.getInstance()
+            .createMeasurementMNode(
+                par != null ? par.getAsEntityMNode() : null, name, schema, alias);
     return mNode;
   }
 }

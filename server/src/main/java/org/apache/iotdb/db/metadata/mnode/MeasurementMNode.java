@@ -41,16 +41,6 @@ public class MeasurementMNode extends MNode implements IMeasurementMNode {
   /** whether this measurement is pre deleted and considered in black list */
   private boolean preDeleted = false;
 
-  /**
-   * MeasurementMNode factory method. The type of returned MeasurementMNode is according to the
-   * schema type. The default type is UnaryMeasurementMNode, which means if schema == null, an
-   * UnaryMeasurementMNode will return.
-   */
-  public static IMeasurementMNode getMeasurementMNode(
-      IEntityMNode parent, String measurementName, IMeasurementSchema schema, String alias) {
-    return new MeasurementMNode(parent, measurementName, schema, alias);
-  }
-
   /** @param alias alias of measurementName */
   public MeasurementMNode(IMNode parent, String name, IMeasurementSchema schema, String alias) {
     super(parent, name);

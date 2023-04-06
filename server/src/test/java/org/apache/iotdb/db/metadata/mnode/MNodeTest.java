@@ -18,6 +18,7 @@
  */
 package org.apache.iotdb.db.metadata.mnode;
 
+import org.apache.iotdb.db.metadata.mnode.factory.MNodeFactory;
 import org.apache.iotdb.db.metadata.utils.MetaUtils;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
@@ -50,7 +51,8 @@ public class MNodeTest {
     IEntityMNode aNode = new EntityMNode(rootNode, "a");
     rootNode.addChild(aNode.getName(), aNode);
 
-    IMeasurementMNode bNode = MeasurementMNode.getMeasurementMNode(aNode, "b", null, null);
+    IMeasurementMNode bNode =
+        MNodeFactory.getInstance().createMeasurementMNode(aNode, "b", null, null);
 
     aNode.addChild(bNode.getName(), bNode);
     aNode.addAlias("aliasOfb", bNode);

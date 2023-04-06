@@ -27,9 +27,9 @@ import org.apache.iotdb.db.metadata.mnode.IMeasurementMNode;
 import org.apache.iotdb.db.metadata.mnode.IStorageGroupMNode;
 import org.apache.iotdb.db.metadata.mnode.InternalMNode;
 import org.apache.iotdb.db.metadata.mnode.MNodeUtils;
-import org.apache.iotdb.db.metadata.mnode.MeasurementMNode;
 import org.apache.iotdb.db.metadata.mnode.StorageGroupEntityMNode;
 import org.apache.iotdb.db.metadata.mnode.StorageGroupMNode;
+import org.apache.iotdb.db.metadata.mnode.factory.MNodeFactory;
 import org.apache.iotdb.db.metadata.mtree.store.disk.ICachedMNodeContainer;
 import org.apache.iotdb.db.metadata.mtree.store.disk.schemafile.ISchemaFile;
 import org.apache.iotdb.db.metadata.mtree.store.disk.schemafile.RecordUtils;
@@ -1024,7 +1024,8 @@ public class SchemaFileTest {
   static IMNode getMeasurementNode(IMNode par, String name, String alias) {
     IMeasurementSchema schema = new MeasurementSchema(name, TSDataType.FLOAT);
     IMeasurementMNode mNode =
-        MeasurementMNode.getMeasurementMNode(par.getAsEntityMNode(), name, schema, alias);
+        MNodeFactory.getInstance()
+            .createMeasurementMNode(par.getAsEntityMNode(), name, schema, alias);
     return mNode;
   }
 
@@ -1079,8 +1080,9 @@ public class SchemaFileTest {
       String measurementId = "mid" + idx;
       IMeasurementSchema schema = new MeasurementSchema(measurementId, TSDataType.FLOAT);
       IMeasurementMNode mNode =
-          MeasurementMNode.getMeasurementMNode(
-              internalNode.getAsEntityMNode(), measurementId, schema, measurementId + "als");
+          MNodeFactory.getInstance()
+              .createMeasurementMNode(
+                  internalNode.getAsEntityMNode(), measurementId, schema, measurementId + "als");
       internalNode.addChild(mNode);
     }
 
@@ -1095,14 +1097,15 @@ public class SchemaFileTest {
     for (int idx = 0; idx < 1000; idx++) {
       IMeasurementSchema schema = new MeasurementSchema("finalM" + idx, TSDataType.FLOAT);
       IMeasurementMNode mNode =
-          MeasurementMNode.getMeasurementMNode(
-              internalNode.getAsEntityMNode(), "finalM" + idx, schema, "finalals" + idx);
+          MNodeFactory.getInstance()
+              .createMeasurementMNode(
+                  internalNode.getAsEntityMNode(), "finalM" + idx, schema, "finalals" + idx);
       curNode.addChild(mNode);
     }
     IMeasurementSchema schema = new MeasurementSchema("finalM", TSDataType.FLOAT);
     IMeasurementMNode mNode =
-        MeasurementMNode.getMeasurementMNode(
-            internalNode.getAsEntityMNode(), "finalM", schema, "finalals");
+        MNodeFactory.getInstance()
+            .createMeasurementMNode(internalNode.getAsEntityMNode(), "finalM", schema, "finalals");
     curNode.addChild(mNode);
     upperNode.addChild(internalNode);
     return internalNode;
@@ -1117,8 +1120,9 @@ public class SchemaFileTest {
       String measurementId = id + idx;
       IMeasurementSchema schema = new MeasurementSchema(measurementId, TSDataType.FLOAT);
       IMeasurementMNode mNode =
-          MeasurementMNode.getMeasurementMNode(
-              internalNode.getAsEntityMNode(), measurementId, schema, measurementId + "als");
+          MNodeFactory.getInstance()
+              .createMeasurementMNode(
+                  internalNode.getAsEntityMNode(), measurementId, schema, measurementId + "als");
       internalNode.addChild(mNode);
     }
 

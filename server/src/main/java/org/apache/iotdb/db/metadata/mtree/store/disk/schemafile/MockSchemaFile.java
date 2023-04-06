@@ -26,9 +26,9 @@ import org.apache.iotdb.db.metadata.mnode.IMNode;
 import org.apache.iotdb.db.metadata.mnode.IMeasurementMNode;
 import org.apache.iotdb.db.metadata.mnode.IStorageGroupMNode;
 import org.apache.iotdb.db.metadata.mnode.InternalMNode;
-import org.apache.iotdb.db.metadata.mnode.MeasurementMNode;
 import org.apache.iotdb.db.metadata.mnode.StorageGroupEntityMNode;
 import org.apache.iotdb.db.metadata.mnode.StorageGroupMNode;
+import org.apache.iotdb.db.metadata.mnode.factory.MNodeFactory;
 import org.apache.iotdb.db.metadata.mtree.store.disk.CachedMNodeContainer;
 import org.apache.iotdb.db.metadata.mtree.store.disk.ICachedMNodeContainer;
 
@@ -179,11 +179,12 @@ public class MockSchemaFile implements ISchemaFile {
     if (node.isMeasurement()) {
       IMeasurementMNode measurementMNode = node.getAsMeasurementMNode();
       IMeasurementMNode result =
-          MeasurementMNode.getMeasurementMNode(
-              null,
-              measurementMNode.getName(),
-              measurementMNode.getSchema(),
-              measurementMNode.getAlias());
+          MNodeFactory.getInstance()
+              .createMeasurementMNode(
+                  null,
+                  measurementMNode.getName(),
+                  measurementMNode.getSchema(),
+                  measurementMNode.getAlias());
       result.setOffset(measurementMNode.getOffset());
       return result;
     } else if (node.isStorageGroup() && node.isEntity()) {
