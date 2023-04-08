@@ -38,6 +38,20 @@ public abstract class MNode implements IMNode {
 
   protected CacheEntry cacheEntry;
 
+  protected MNode() {}
+
+  protected void init(IMNode parent, String name) {
+    this.parent = parent;
+    this.name = name;
+  }
+
+  protected void clear() {
+    this.parent = null;
+    this.name = null;
+    this.fullPath = null;
+    this.cacheEntry = null;
+  }
+
   /** Constructor of MNode. */
   protected MNode(IMNode parent, String name) {
     this.parent = parent;

@@ -22,9 +22,6 @@ package org.apache.iotdb.db.query.control;
 import org.apache.iotdb.common.rpc.thrift.TSStatus;
 import org.apache.iotdb.commons.conf.IoTDBConstant;
 import org.apache.iotdb.commons.service.JMXService;
-import org.apache.iotdb.commons.service.metric.MetricService;
-import org.apache.iotdb.commons.service.metric.enums.Metric;
-import org.apache.iotdb.commons.service.metric.enums.Tag;
 import org.apache.iotdb.db.audit.AuditLogger;
 import org.apache.iotdb.db.auth.AuthorizerManager;
 import org.apache.iotdb.db.conf.IoTDBDescriptor;
@@ -34,7 +31,6 @@ import org.apache.iotdb.db.mpp.plan.statement.StatementType;
 import org.apache.iotdb.db.mpp.plan.statement.sys.AuthorStatement;
 import org.apache.iotdb.db.query.control.clientsession.IClientSession;
 import org.apache.iotdb.db.service.basic.BasicOpenSessionResp;
-import org.apache.iotdb.metrics.utils.MetricLevel;
 import org.apache.iotdb.rpc.RpcUtils;
 import org.apache.iotdb.rpc.TSStatusCode;
 import org.apache.iotdb.service.rpc.thrift.TSConnectionInfo;
@@ -270,13 +266,13 @@ public class SessionManager implements SessionManagerMBean {
     if (idleTime == null) {
       currSessionIdleTime.set(System.nanoTime());
     } else {
-      MetricService.getInstance()
-          .getOrCreateHistogram(
-              Metric.SESSION_IDLE_TIME.toString(),
-              MetricLevel.CORE,
-              Tag.NAME.toString(),
-              String.valueOf(clientSession.getId()))
-          .update(System.nanoTime() - idleTime);
+      //      MetricService.getInstance()
+      //          .getOrCreateHistogram(
+      //              Metric.SESSION_IDLE_TIME.toString(),
+      //              MetricLevel.CORE,
+      //              Tag.NAME.toString(),
+      //              String.valueOf(clientSession.getId()))
+      //          .update(System.nanoTime() - idleTime);
     }
     return clientSession;
   }

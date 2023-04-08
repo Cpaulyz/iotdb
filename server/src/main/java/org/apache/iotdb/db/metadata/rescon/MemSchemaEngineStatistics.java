@@ -45,6 +45,7 @@ public class MemSchemaEngineStatistics implements ISchemaEngineStatistics {
   private final Map<Integer, Integer> templateUsage = new ConcurrentHashMap<>();
 
   private volatile boolean allowToCreateNewSeries = true;
+  private final Object allowToCreateNewSeriesLock = new Object();
 
   @Override
   public boolean isAllowToCreateNewSeries() {
@@ -69,19 +70,27 @@ public class MemSchemaEngineStatistics implements ISchemaEngineStatistics {
   public void requestMemory(long size) {
     memoryUsage.addAndGet(size);
     if (memoryUsage.get() >= memoryCapacity) {
-      logger.warn("Current series memory {} is too large...", memoryUsage);
-      allowToCreateNewSeries = false;
+      synchronized (allowToCreateNewSeriesLock) {
+        if (memoryUsage.get() >= memoryCapacity) {
+          logger.warn("Current series memory {} is too large...", memoryUsage);
+          allowToCreateNewSeries = false;
+        }
+      }
     }
   }
 
   public void releaseMemory(long size) {
     memoryUsage.addAndGet(-size);
     if (!allowToCreateNewSeries && memoryUsage.get() < memoryCapacity) {
-      logger.info(
-          "Current series memory {} come back to normal level, total series number is {}.",
-          memoryUsage,
-          totalSeriesNumber);
-      allowToCreateNewSeries = true;
+      synchronized (allowToCreateNewSeriesLock) {
+        if (!allowToCreateNewSeries && memoryUsage.get() < memoryCapacity) {
+          logger.info(
+              "Current series memory {} come back to normal level, total series number is {}.",
+              memoryUsage,
+              totalSeriesNumber);
+          allowToCreateNewSeries = true;
+        }
+      }
     }
   }
 

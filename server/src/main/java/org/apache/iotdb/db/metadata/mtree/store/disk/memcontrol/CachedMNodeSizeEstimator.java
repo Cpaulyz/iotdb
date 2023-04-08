@@ -69,4 +69,16 @@ public class CachedMNodeSizeEstimator extends BasicMNodSizeEstimator {
 
     return size;
   }
+
+  public int getEmptyMeasurementNodeSize() {
+    return NODE_BASE_SIZE + MEASUREMENT_NODE_BASE_SIZE;
+  }
+
+  public int getEmptyEntityNodeSize() {
+    return NODE_BASE_SIZE + INTERNAL_NODE_BASE_SIZE + ENTITY_NODE_BASE_SIZE;
+  }
+
+  public int getEmptyInternalNodeSize() {
+    return NODE_BASE_SIZE + INTERNAL_NODE_BASE_SIZE;
+  }
 }

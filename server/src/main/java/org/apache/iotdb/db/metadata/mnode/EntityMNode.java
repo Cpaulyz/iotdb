@@ -44,6 +44,17 @@ public class EntityMNode extends InternalMNode implements IEntityMNode {
     return fullPath;
   }
 
+  public EntityMNode() {}
+
+  public void init(IMNode parent, String name) {
+    super.init(parent, name);
+  }
+
+  public void clear() {
+    super.clear();
+    aliasChildren = null;
+  }
+
   /**
    * Constructor of MNode.
    *

@@ -41,6 +41,20 @@ public class MeasurementMNode extends MNode implements IMeasurementMNode {
   /** whether this measurement is pre deleted and considered in black list */
   private boolean preDeleted = false;
 
+  public MeasurementMNode() {}
+
+  public void init(IMNode parent, String name, IMeasurementSchema schema, String alias) {
+    super.init(parent, name);
+    this.schema = schema;
+    this.alias = alias;
+  }
+
+  public void clear() {
+    super.clear();
+    this.schema = null;
+    this.alias = null;
+  }
+
   /** @param alias alias of measurementName */
   public MeasurementMNode(IMNode parent, String name, IMeasurementSchema schema, String alias) {
     super(parent, name);

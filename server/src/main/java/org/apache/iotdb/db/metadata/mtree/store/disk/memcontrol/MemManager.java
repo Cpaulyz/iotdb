@@ -20,6 +20,8 @@
 package org.apache.iotdb.db.metadata.mtree.store.disk.memcontrol;
 
 import org.apache.iotdb.db.metadata.mnode.IMNode;
+import org.apache.iotdb.db.metadata.mnode.factory.CachedMNodeFactory;
+import org.apache.iotdb.db.metadata.mnode.factory.MNodeFactory;
 import org.apache.iotdb.db.metadata.rescon.CachedSchemaRegionStatistics;
 
 import java.util.List;
@@ -30,6 +32,7 @@ public class MemManager {
   private final CachedSchemaRegionStatistics regionStatistics;
 
   private final CachedMNodeSizeEstimator estimator = new CachedMNodeSizeEstimator();
+  private final CachedMNodeFactory factory = (CachedMNodeFactory) MNodeFactory.getInstance();
 
   public MemManager(CachedSchemaRegionStatistics regionStatistics) {
     this.regionStatistics = regionStatistics;
@@ -62,6 +65,7 @@ public class MemManager {
     int size = estimator.estimateSize(node);
     regionStatistics.updateUnpinnedMemorySize(-size);
     regionStatistics.updateUnpinnedMNodeNum(-1);
+    //    factory.returnMNode(node);
     regionStatistics.releaseMemory(size);
   }
 
@@ -69,6 +73,7 @@ public class MemManager {
     int size = 0;
     for (IMNode node : evictedNodes) {
       size += estimator.estimateSize(node);
+      //      factory.returnMNode(node);
     }
     regionStatistics.updateUnpinnedMNodeNum(-evictedNodes.size());
     regionStatistics.updateUnpinnedMemorySize(-size);

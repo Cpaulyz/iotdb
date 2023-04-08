@@ -52,6 +52,19 @@ public class InternalMNode extends MNode {
 
   private volatile boolean useTemplate = false;
 
+  public InternalMNode() {}
+
+  public void init(IMNode parent, String name) {
+    super.init(parent, name);
+  }
+
+  public void clear() {
+    super.clear();
+    if (children != null) {
+      children.clear();
+    }
+  }
+
   /** Constructor of MNode. */
   public InternalMNode(IMNode parent, String name) {
     super(parent, name);
