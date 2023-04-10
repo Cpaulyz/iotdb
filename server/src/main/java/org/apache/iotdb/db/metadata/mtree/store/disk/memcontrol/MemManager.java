@@ -65,7 +65,7 @@ public class MemManager {
     int size = estimator.estimateSize(node);
     regionStatistics.updateUnpinnedMemorySize(-size);
     regionStatistics.updateUnpinnedMNodeNum(-1);
-    //    factory.returnMNode(node);
+    factory.returnMNode(node);
     regionStatistics.releaseMemory(size);
   }
 
@@ -73,7 +73,7 @@ public class MemManager {
     int size = 0;
     for (IMNode node : evictedNodes) {
       size += estimator.estimateSize(node);
-      //      factory.returnMNode(node);
+      factory.returnMNode(node);
     }
     regionStatistics.updateUnpinnedMNodeNum(-evictedNodes.size());
     regionStatistics.updateUnpinnedMemorySize(-size);
