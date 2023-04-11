@@ -24,48 +24,29 @@ import org.apache.iotdb.db.metadata.mnode.InternalMNode;
 import org.apache.iotdb.db.metadata.mnode.MeasurementMNode;
 import org.apache.iotdb.tsfile.write.schema.IMeasurementSchema;
 
-import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
-
 public class CachedMNodeFactory extends MNodeFactory {
 
-  private final MNodePoolV2<MeasurementMNode> measurementMNodePool;
+  private final MNodePool<MeasurementMNode> measurementMNodePool;
   private final MNodePool<EntityMNode> entityMNodePool;
   private final MNodePool<InternalMNode> internalMNodePool;
 
   public CachedMNodeFactory() {
 
-    int internalNum = 1;
-    int entityNum = 1;
-    int measurementNum = 10000;
-
-    GenericObjectPoolConfig<MeasurementMNode> measurementConfig = new GenericObjectPoolConfig<>();
-    measurementConfig.setMaxIdle((int) measurementNum);
-    measurementConfig.setMinIdle(0);
-    measurementConfig.setMaxTotal(Integer.MAX_VALUE);
-    GenericObjectPoolConfig<EntityMNode> entityConfig = new GenericObjectPoolConfig<>();
-    entityConfig.setMaxIdle((int) entityNum);
-    entityConfig.setMinIdle(0);
-    entityConfig.setMaxTotal(Integer.MAX_VALUE);
-    GenericObjectPoolConfig<InternalMNode> internalConfig = new GenericObjectPoolConfig<>();
-    internalConfig.setMaxIdle((int) internalNum);
-    internalConfig.setMinIdle(0);
-    internalConfig.setMaxTotal(Integer.MAX_VALUE);
-
-    measurementMNodePool = new MNodePoolV2<>(MeasurementMNode::new, 1000, 7);
-    entityMNodePool = new MNodePool<>(EntityMNode::new, entityConfig);
-    internalMNodePool = new MNodePool<>(InternalMNode::new, internalConfig);
+    measurementMNodePool = new MNodePool<>(MeasurementMNode::new, 1000, 7);
+    entityMNodePool = new MNodePool<>(EntityMNode::new, 100, 7);
+    internalMNodePool = new MNodePool<>(InternalMNode::new, 100, 7);
   }
 
   @Override
   public EntityMNode createEntityMNode(IMNode parent, String name) {
-    //    try {
-    //      EntityMNode node = entityMNodePool.borrowObject();
-    //      node.init(parent, name);
-    //      return node;
-    //    } catch (Exception e) {
-    //      throw new RuntimeException(e);
-    //    }
-    return new EntityMNode(parent, name);
+    try {
+      EntityMNode node = entityMNodePool.borrowObject();
+      node.init(parent, name);
+      return node;
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+    //    return new EntityMNode(parent, name);
   }
 
   @Override
@@ -78,32 +59,31 @@ public class CachedMNodeFactory extends MNodeFactory {
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
-    //    return new MeasurementMNode(parent, name, schema, alias);
+    //        return new MeasurementMNode(parent, name, schema, alias);
   }
 
   @Override
   public InternalMNode createInternalMNode(IMNode parent, String name) {
-    //    try {
-    //      InternalMNode node = internalMNodePool.borrowObject();
-    //      node.init(parent, name);
-    //      return node;
-    //    } catch (Exception e) {
-    //      throw new RuntimeException(e);
-    //    }
-    return new InternalMNode(parent, name);
+    try {
+      InternalMNode node = internalMNodePool.borrowObject();
+      node.init(parent, name);
+      return node;
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+    //    return new InternalMNode(parent, name);
   }
 
   public void returnMNode(IMNode node) {
-    //    if (node instanceof EntityMNode) {
-    //      EntityMNode entityMNode = (EntityMNode) node;
-    //      entityMNode.clear();
-    //      entityMNodePool.returnObject(entityMNode);
-    //    } else if (node instanceof InternalMNode) {
-    //      InternalMNode internalMNode = (InternalMNode) node;
-    //      internalMNode.clear();
-    //      internalMNodePool.returnObject(internalMNode);
-    //    } else if (node instanceof MeasurementMNode) {
-    if (node instanceof MeasurementMNode) {
+    if (node instanceof EntityMNode) {
+      EntityMNode entityMNode = (EntityMNode) node;
+      entityMNode.clear();
+      entityMNodePool.returnObject(entityMNode);
+    } else if (node instanceof InternalMNode) {
+      InternalMNode internalMNode = (InternalMNode) node;
+      internalMNode.clear();
+      internalMNodePool.returnObject(internalMNode);
+    } else if (node instanceof MeasurementMNode) {
       MeasurementMNode measurementMNode = (MeasurementMNode) node;
       measurementMNode.clear();
       measurementMNodePool.returnObject(measurementMNode);

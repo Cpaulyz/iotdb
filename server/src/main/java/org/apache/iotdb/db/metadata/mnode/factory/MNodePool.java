@@ -20,46 +20,38 @@ package org.apache.iotdb.db.metadata.mnode.factory;
 
 import org.apache.iotdb.db.metadata.mnode.IMNode;
 
-import org.apache.commons.pool2.BasePooledObjectFactory;
-import org.apache.commons.pool2.PooledObject;
-import org.apache.commons.pool2.impl.DefaultPooledObject;
-import org.apache.commons.pool2.impl.GenericObjectPool;
-import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
-
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.List;
 import java.util.function.Supplier;
 
 public class MNodePool<N extends IMNode> {
+  private final MNodePartition<N>[] partitions;
+  private final int partitionNum;
 
-  private AtomicInteger integer = new AtomicInteger(0);
+  public MNodePool(Supplier<N> creator, int sizePerPartition, int partitionNum) {
+    this.partitions = new MNodePartition[partitionNum];
+    this.partitionNum = partitionNum;
+    for (int i = 0; i < partitionNum; i++) {
+      partitions[i] = new MNodePartition<>(sizePerPartition, creator);
+    }
+  }
 
-  private final GenericObjectPool<N> nodePool;
-  private final Supplier<N> creator;
-
-  public MNodePool(Supplier<N> creator, GenericObjectPoolConfig<N> config) {
-    this.creator = creator;
-    this.nodePool = new GenericObjectPool<>(new NodeFactory(), config);
+  private MNodePartition<N> getPartition() {
+    int partition = (int) (Thread.currentThread().getId() % this.partitionNum);
+    return partitions[partition];
   }
 
   public N borrowObject() throws Exception {
-    return nodePool.borrowObject();
+    return getPartition().borrowObject();
   }
 
   public void returnObject(N node) {
-    nodePool.returnObject(node);
+    getPartition().returnObject(node);
   }
 
-  class NodeFactory extends BasePooledObjectFactory<N> {
-
-    @Override
-    public N create() throws Exception {
-      System.out.println(integer.incrementAndGet());
-      return creator.get();
-    }
-
-    @Override
-    public PooledObject<N> wrap(N n) {
-      return new DefaultPooledObject<>(n);
+  public void returnObjects(List<N> nodes) {
+    MNodePartition<N> partition = getPartition();
+    for (N node : nodes) {
+      partition.returnObject(node);
     }
   }
 }

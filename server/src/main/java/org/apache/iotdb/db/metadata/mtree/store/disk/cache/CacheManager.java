@@ -455,6 +455,8 @@ public abstract class CacheManager implements ICacheManager {
     CacheEntry cacheEntry = getCacheEntry(node);
 
     boolean isPinStatusChanged = false;
+    IMNode parent =
+        node.getParent(); // parent should be token before unpin, otherwise it may be set to null
     synchronized (cacheEntry) {
       cacheEntry.unPin();
       if (!cacheEntry.isPinned()) {
@@ -464,7 +466,7 @@ public abstract class CacheManager implements ICacheManager {
     }
 
     if (isPinStatusChanged && !node.isStorageGroup()) {
-      doUnPin(node.getParent());
+      doUnPin(parent);
     }
 
     return isPinStatusChanged;
